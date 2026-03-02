@@ -41,6 +41,42 @@ services:
           memory: 256M
           cpus: '0.5'
 
+  watchdog:
+    image: alpine:latest
+    container_name: geoloop-watchdog
+    restart: unless-stopped
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        apk add --no-cache curl > /dev/null 2>&1
+        FAILS=0
+        while true; do
+          if curl -sf --max-time 10 https://uptime.tommytv.no > /dev/null 2>&1; then
+            FAILS=0
+          else
+            FAILS=$$((FAILS + 1))
+            if [ $$FAILS -ge 3 ]; then
+              curl -sf -d "Uptime Kuma (uptime.tommytv.no) er nede! Sjekk hovedserveren." \
+                -H "Title: Hovedserver nede" \
+                -H "Priority: urgent" \
+                -H "Tags: rotating_light" \
+                https://ntfy.sh/$${WATCHDOG_NTFY_TOPIC:-tommytv-uptime}
+              FAILS=0
+              sleep 300
+              continue
+            fi
+          fi
+          sleep 60
+        done
+    environment:
+      WATCHDOG_NTFY_TOPIC: ${WATCHDOG_NTFY_TOPIC:-tommytv-uptime}
+    deploy:
+      resources:
+        limits:
+          memory: 32M
+          cpus: '0.1'
+
 networks:
   geoloop-network:
     driver: bridge

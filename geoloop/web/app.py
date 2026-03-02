@@ -22,6 +22,8 @@ _STATIC_DIR = Path(__file__).parent / "static"
 
 import os
 
+from geoloop import notify
+
 _PASSWORD = os.environ.get("GEOLOOP_PASSWORD", "")
 _AUTH_TOKEN = hashlib.sha256(_PASSWORD.encode()).hexdigest() if _PASSWORD else ""
 _AUTH_COOKIE = "geoloop_auth"
@@ -263,6 +265,7 @@ async def heating_on() -> dict:
     if _store:
         _store.log_event("manual_on", "Manuell overstyring: varme PÅ (vedvarende)")
     logger.info("Manuell overstyring: varme PÅ (vedvarende)")
+    await notify.send("Modus endret: PÅ", "Manuell overstyring: varme slått PÅ", tags="fire")
     return {"heating": {"on": True, "mode": "on"}}
 
 
@@ -278,6 +281,7 @@ async def heating_off() -> dict:
     if _store:
         _store.log_event("manual_off", "Manuell overstyring: varme AV (vedvarende)")
     logger.info("Manuell overstyring: varme AV (vedvarende)")
+    await notify.send("Modus endret: AV", "Manuell overstyring: varme slått AV", tags="snowflake")
     return {"heating": {"on": False, "mode": "off"}}
 
 
@@ -292,6 +296,7 @@ async def heating_auto() -> dict:
     if _store:
         _store.log_event("auto_mode", "Tilbake til automatisk styring")
     logger.info("Tilbake til automatisk styring")
+    await notify.send("Modus endret: AUTO", "Tilbake til automatisk styring", tags="robot_face")
     return {"heating": {"on": on, "mode": "auto"}}
 
 
@@ -330,6 +335,12 @@ async def set_thresholds_api(request: Request) -> dict:
     if _store:
         _store.log_event("thresholds_changed", f"Nye grenser: {_thresholds}")
     logger.info("Temperaturgrenser oppdatert: %s", _thresholds)
+    await notify.send(
+        "Temperaturgrenser endret",
+        f"Faresone: {_thresholds['ice_temp_min']}°C til {_thresholds['ice_temp_max']}°C\n"
+        f"Kritisk: {_thresholds['critical_temp_min']}°C til {_thresholds['critical_temp_max']}°C",
+        tags="thermometer",
+    )
     return dict(_thresholds)
 
 

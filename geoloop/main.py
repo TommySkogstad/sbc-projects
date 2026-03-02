@@ -12,7 +12,8 @@ from geoloop.config import load_config
 from geoloop.controller.stub import StubController
 from geoloop.db.store import Store
 from geoloop.engine.ice_risk import evaluate
-from geoloop.engine.models import HeatingDecision, SensorReadings
+from geoloop.engine.models import HeatingDecision, IceRiskLevel, SensorReadings
+from geoloop import notify
 from geoloop.sensors.stub import StubSensor
 from geoloop.weather.met_client import MetClient
 from geoloop.web.app import app, configure, get_manual_override, get_thresholds
@@ -179,6 +180,13 @@ async def _control_loop(
         if result.decision == HeatingDecision.TURN_ON and not currently_on:
             await controller.turn_on()
             store.log_event("heating_on", result.reason)
+            if result.risk_level == IceRiskLevel.HIGH:
+                await notify.send(
+                    "Isfare — varme PÅ",
+                    f"Risikonivå: HØY\n{result.reason}",
+                    priority="high",
+                    tags="ice_cube,warning",
+                )
         elif result.decision == HeatingDecision.TURN_OFF and currently_on:
             await controller.turn_off()
             store.log_event("heating_off", result.reason)

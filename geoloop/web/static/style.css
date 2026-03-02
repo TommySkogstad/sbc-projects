@@ -21,8 +21,8 @@ body {
 }
 
 header {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
     padding: 1rem 1.5rem;
     background: var(--card);
@@ -32,6 +32,8 @@ header {
 header h1 { font-size: 1.25rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; }
 
 .header-logo { width: 64px; height: 64px; }
+
+.header-right { text-align: right; }
 
 .header-link {
     color: inherit;

@@ -11,7 +11,17 @@
 
     // -- API helpers --
 
+    function getCsrfToken() {
+        var match = document.cookie.match(/(?:^|;\s*)geoloop_csrf=([^;]+)/);
+        return match ? match[1] : "";
+    }
+
     function fetchJSON(url, opts) {
+        opts = opts || {};
+        if (opts.method && opts.method !== "GET") {
+            opts.headers = opts.headers || {};
+            opts.headers["x-csrf-token"] = getCsrfToken();
+        }
         return fetch(url, opts).then(function (r) { return r.json(); });
     }
 
@@ -104,33 +114,61 @@
 
     function renderSensors(sensors) {
         var grid = document.getElementById("sensor-grid");
-        var html = "";
+        grid.textContent = "";
+        var hasKeys = false;
         for (var key in sensors) {
+            hasKeys = true;
             var label = SENSOR_LABELS[key] || key;
             var val = sensors[key];
-            html += '<div class="stat">' +
-                '<span class="stat-value">' + fmt(val, "\u00b0C") + '</span>' +
-                '<span class="stat-label">' + label + '</span></div>';
+            var div = document.createElement("div");
+            div.className = "stat";
+            var spanVal = document.createElement("span");
+            spanVal.className = "stat-value";
+            spanVal.textContent = fmt(val, "\u00b0C");
+            var spanLabel = document.createElement("span");
+            spanLabel.className = "stat-label";
+            spanLabel.textContent = label;
+            div.appendChild(spanVal);
+            div.appendChild(spanLabel);
+            grid.appendChild(div);
         }
-        grid.innerHTML = html || '<p class="meta">Ingen sensorer</p>';
+        if (!hasKeys) {
+            var p = document.createElement("p");
+            p.className = "meta";
+            p.textContent = "Ingen sensorer";
+            grid.appendChild(p);
+        }
     }
 
     function renderEvents(events) {
         var el = document.getElementById("event-log");
+        el.textContent = "";
         if (!events.length) {
-            el.innerHTML = '<p class="meta">Ingen hendelser</p>';
+            var p = document.createElement("p");
+            p.className = "meta";
+            p.textContent = "Ingen hendelser";
+            el.appendChild(p);
             return;
         }
-        var html = "";
         for (var i = 0; i < events.length; i++) {
             var e = events[i];
             var ts = e.timestamp ? new Date(e.timestamp).toLocaleString("nb-NO") : "";
-            html += '<div class="event-item">' +
-                '<span class="event-type ' + e.event_type + '">' + e.event_type + '</span>' +
-                '<span class="event-msg">' + (e.message || "") + '</span>' +
-                '<span class="event-time">' + ts + '</span></div>';
+            var div = document.createElement("div");
+            div.className = "event-item";
+            var spanType = document.createElement("span");
+            spanType.className = "event-type " + (e.event_type || "");
+            spanType.textContent = e.event_type || "";
+            var spanMsg = document.createElement("span");
+            spanMsg.className = "event-msg";
+            spanMsg.textContent = e.message || "";
+            var spanTime = document.createElement("span");
+            spanTime.className = "event-time";
+            spanTime.textContent = ts;
+            div.appendChild(spanType);
+            div.appendChild(spanMsg);
+            div.appendChild(spanTime);
+            el.appendChild(div);
         }
-        el.innerHTML = html;
     }
 
     // -- Forecast chart --
@@ -483,7 +521,10 @@
         thresholdDebounce = setTimeout(function () {
             fetch("/api/thresholds", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-csrf-token": getCsrfToken(),
+                },
                 body: JSON.stringify(body),
             });
         }, 500);

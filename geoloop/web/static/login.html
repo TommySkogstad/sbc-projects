@@ -34,7 +34,13 @@
         }).then(function(r) {
             if (r.ok) { window.location.href = "/"; }
             else {
-                document.getElementById("login-error").style.display = "block";
+                var errEl = document.getElementById("login-error");
+                r.json().then(function(data) {
+                    errEl.textContent = data.error || "Feil passord";
+                }).catch(function() {
+                    errEl.textContent = "Feil passord";
+                });
+                errEl.style.display = "block";
                 document.getElementById("pw").value = "";
                 document.getElementById("pw").focus();
             }

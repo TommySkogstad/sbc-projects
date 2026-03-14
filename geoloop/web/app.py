@@ -2,6 +2,10 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import os
+import secrets
+import time
+from collections import defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -16,31 +20,68 @@ if TYPE_CHECKING:
     from geoloop.sensors.base import TemperatureSensor
     from geoloop.weather.met_client import MetClient, WeatherForecast
 
+from geoloop import notify
+
 logger = logging.getLogger(__name__)
 
 _STATIC_DIR = Path(__file__).parent / "static"
 
-import os
-
-from geoloop import notify
-
 _PASSWORD = os.environ.get("GEOLOOP_PASSWORD", "")
 _AUTH_TOKEN = hashlib.sha256(_PASSWORD.encode()).hexdigest() if _PASSWORD else ""
 _AUTH_COOKIE = "geoloop_auth"
+_CSRF_COOKIE = "geoloop_csrf"
+_CSRF_HEADER = "x-csrf-token"
+
+# Rate limiting for login: max 5 forsøk per IP per 5 minutter
+_login_attempts: dict[str, list[float]] = defaultdict(list)
+_RATE_LIMIT_MAX = 5
+_RATE_LIMIT_WINDOW = 300  # sekunder
+
+# CSRF tokens per session
+_csrf_tokens: dict[str, str] = {}
 
 app = FastAPI(title="GeoLoop", version="0.1.0")
 app.mount("/static", StaticFiles(directory=_STATIC_DIR), name="static")
 
 
+def _get_client_ip(request: Request) -> str:
+    """Hent klient-IP (bak Cloudflare Tunnel)."""
+    return (
+        request.headers.get("cf-connecting-ip")
+        or request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+        or (request.client.host if request.client else "unknown")
+    )
+
+
+def _check_rate_limit(ip: str) -> bool:
+    """Sjekk om IP har overskredet rate limit. Returnerer True hvis blokkert."""
+    now = time.monotonic()
+    attempts = _login_attempts[ip]
+    # Fjern gamle forsøk
+    _login_attempts[ip] = [t for t in attempts if now - t < _RATE_LIMIT_WINDOW]
+    return len(_login_attempts[ip]) >= _RATE_LIMIT_MAX
+
+
+def _verify_csrf(request: Request) -> bool:
+    """Verifiser CSRF-token fra header mot cookie."""
+    cookie_token = request.cookies.get(_CSRF_COOKIE, "")
+    header_token = request.headers.get(_CSRF_HEADER, "")
+    return bool(cookie_token and cookie_token == header_token)
+
+
 @app.middleware("http")
 async def auth_middleware(request: Request, call_next):
-    """Enkel passord-beskyttelse via cookie."""
+    """Passord-beskyttelse via cookie + CSRF på POST."""
     if not _PASSWORD:
         return await call_next(request)
 
     path = request.url.path
     # Tillat login, statiske filer og healthcheck uten auth
-    if path in ("/login", "/api/login", "/api/status") or path.startswith("/static/"):
+    if path in ("/login", "/api/login") or path.startswith("/static/"):
+        return await call_next(request)
+
+    # /api/status tillates uten auth (brukes av healthcheck)
+    if path == "/api/status":
         return await call_next(request)
 
     token = request.cookies.get(_AUTH_COOKIE)
@@ -48,6 +89,11 @@ async def auth_middleware(request: Request, call_next):
         if path.startswith("/api/"):
             return JSONResponse({"error": "Ikke autentisert"}, status_code=401)
         return RedirectResponse("/login")
+
+    # CSRF-sjekk på muterende forespørsler
+    if request.method in ("POST", "PUT", "DELETE", "PATCH"):
+        if not _verify_csrf(request):
+            return JSONResponse({"error": "Ugyldig CSRF-token"}, status_code=403)
 
     return await call_next(request)
 
@@ -106,14 +152,31 @@ async def login_page() -> FileResponse:
 
 @app.post("/api/login")
 async def login(request: Request):
-    """Verifiser passord og sett auth-cookie."""
+    """Verifiser passord og sett auth-cookie + CSRF-cookie."""
+    ip = _get_client_ip(request)
+
+    if _check_rate_limit(ip):
+        return JSONResponse(
+            {"error": "For mange forsøk. Prøv igjen om noen minutter."},
+            status_code=429,
+        )
+
+    _login_attempts[ip].append(time.monotonic())
+
     body = await request.json()
     if body.get("password") == _PASSWORD:
-        response = JSONResponse({"ok": True})
+        csrf_token = secrets.token_hex(32)
+        response = JSONResponse({"ok": True, "csrf_token": csrf_token})
         response.set_cookie(
             _AUTH_COOKIE, _AUTH_TOKEN,
             httponly=True, samesite="strict", max_age=365 * 24 * 3600,
         )
+        response.set_cookie(
+            _CSRF_COOKIE, csrf_token,
+            httponly=False, samesite="strict", max_age=365 * 24 * 3600,
+        )
+        # Nullstill rate limit ved vellykket innlogging
+        _login_attempts.pop(ip, None)
         return response
     return JSONResponse({"error": "Feil passord"}, status_code=401)
 

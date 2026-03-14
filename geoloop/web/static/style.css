@@ -1,20 +1,21 @@
 :root {
-    --bg: #1a1a2e;
-    --card: #16213e;
-    --text: #e0e0e0;
-    --text-muted: #8a8a9a;
-    --accent: #0f3460;
+    --bg: #0d1b2a;
+    --card: #1b2d42;
+    --text: #b8cad8;
+    --text-muted: #7a96b0;
+    --accent: #2e4260;
     --on: #00c853;
-    --off: #78909c;
+    --off: #4a6080;
     --danger: #ff5252;
     --warm: #ff9800;
     --radius: 8px;
+    --white: #f4f5f2;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
@@ -74,9 +75,10 @@ main {
 }
 
 .card h2 {
-    font-size: 0.9rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.1em;
     color: var(--text-muted);
     margin-bottom: 0.75rem;
 }
@@ -127,7 +129,7 @@ button:hover { opacity: 0.85; }
 
 .ctrl-btn.active-on {
     background: var(--on);
-    color: #1a1a2e;
+    color: var(--bg);
     border-color: var(--on);
 }
 
@@ -139,7 +141,7 @@ button:hover { opacity: 0.85; }
 
 .ctrl-btn.active-auto {
     background: var(--warm);
-    color: #1a1a2e;
+    color: var(--bg);
     border-color: var(--warm);
 }
 
@@ -392,7 +394,7 @@ canvas {
 }
 
 .info-table code {
-    font-family: "SF Mono", "Menlo", monospace;
+    font-family: 'DM Mono', "SF Mono", "Menlo", monospace;
     font-size: 0.75rem;
     color: var(--warm);
     background: rgba(255, 152, 0, 0.1);

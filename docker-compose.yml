@@ -24,6 +24,9 @@ services:
     build: .
     restart: unless-stopped
     env_file: .env
+    environment:
+      - HOST_IP=${HOST_IP:-}
+      - HOST_HOSTNAME=${HOST_HOSTNAME:-}
     volumes:
       - ./config.yaml:/app/config.yaml:ro
       - geoloop_data:/app/data

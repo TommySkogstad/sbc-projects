@@ -168,7 +168,27 @@ else
 fi
 
 # ----------------------------------------------------------
-# 7. Konfigurer sensorer
+# 7. Sett HOST_IP og HOST_HOSTNAME i .env
+# ----------------------------------------------------------
+info "Konfigurerer vertsinformasjon i .env..."
+
+LOCAL_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+LOCAL_HOSTNAME=$(hostname)
+
+if [[ -f "$INSTALL_DIR/.env" ]] && file "$INSTALL_DIR/.env" | grep -q "text"; then
+    # Fjern eksisterende HOST_IP/HOST_HOSTNAME hvis de finnes
+    sed -i '/^HOST_IP=/d; /^HOST_HOSTNAME=/d' "$INSTALL_DIR/.env"
+    echo "" >> "$INSTALL_DIR/.env"
+    echo "# Vertsinformasjon (vises i dashboard-footer for feilsøking)" >> "$INSTALL_DIR/.env"
+    echo "HOST_IP=${LOCAL_IP}" >> "$INSTALL_DIR/.env"
+    echo "HOST_HOSTNAME=${LOCAL_HOSTNAME}" >> "$INSTALL_DIR/.env"
+    ok "HOST_IP=$LOCAL_IP, HOST_HOSTNAME=$LOCAL_HOSTNAME"
+else
+    warn ".env ikke dekryptert ennå — sett HOST_IP og HOST_HOSTNAME manuelt etterpå"
+fi
+
+# ----------------------------------------------------------
+# 8. Konfigurer sensorer
 # ----------------------------------------------------------
 echo ""
 info "Sjekker DS18B20-sensorer..."
@@ -204,12 +224,12 @@ else
 fi
 
 # ----------------------------------------------------------
-# 8. Sett riktig eierskap
+# 9. Sett riktig eierskap
 # ----------------------------------------------------------
 chown -R "$REAL_USER:$REAL_USER" "$INSTALL_DIR"
 
 # ----------------------------------------------------------
-# 9. Systemd-service for Docker Compose
+# 10. Systemd-service for Docker Compose
 # ----------------------------------------------------------
 info "Installerer systemd-tjeneste..."
 
@@ -238,7 +258,7 @@ systemctl enable geoloop.service
 ok "systemd-tjeneste installert og aktivert"
 
 # ----------------------------------------------------------
-# 10. Oppsummering
+# 11. Oppsummering
 # ----------------------------------------------------------
 echo ""
 echo -e "${GREEN}╔══════════════════════════════════════════╗${NC}"

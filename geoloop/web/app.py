@@ -194,16 +194,8 @@ async def info_page() -> FileResponse:
     return FileResponse(_STATIC_DIR / "info.html")
 
 
-def _get_local_ip() -> str:
-    """Hent lokal IP-adresse (den som har default route)."""
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-        s.close()
-        return ip
-    except Exception:
-        return "ukjent"
+_HOST_IP = os.environ.get("HOST_IP", "")
+_HOST_HOSTNAME = os.environ.get("HOST_HOSTNAME", "")
 
 
 @app.get("/api/system")
@@ -213,8 +205,8 @@ async def system_info() -> dict:
         "version": "0.1.0",
         "location": {"lat": _lat, "lon": _lon},
         "network": {
-            "hostname": socket.gethostname(),
-            "local_ip": _get_local_ip(),
+            "hostname": _HOST_HOSTNAME or socket.gethostname(),
+            "local_ip": _HOST_IP or "ikke konfigurert",
         },
     }
 

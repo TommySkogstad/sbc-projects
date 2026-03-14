@@ -538,6 +538,21 @@
         }
     })();
 
+    // -- System info (lokal IP for feilsøking) --
+
+    function updateSystemInfo() {
+        fetchJSON("/api/system").then(function (data) {
+            if (data.network) {
+                var hostEl = document.getElementById("sys-host");
+                var ipEl = document.getElementById("sys-ip");
+                var verEl = document.getElementById("sys-version");
+                if (hostEl) hostEl.textContent = data.network.hostname;
+                if (ipEl) ipEl.textContent = data.network.local_ip;
+                if (verEl && data.version) verEl.textContent = "v" + data.version;
+            }
+        }).catch(function () { /* ignore */ });
+    }
+
     // -- Init --
 
     function poll() {
@@ -551,6 +566,7 @@
     updateStatus();
     updateForecast();
     updateLog();
+    updateSystemInfo();
     setTimeout(updateHistory, 100);
     pollTimer = setInterval(poll, POLL_INTERVAL);
 

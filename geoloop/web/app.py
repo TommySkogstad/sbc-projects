@@ -4,6 +4,7 @@ import hashlib
 import logging
 import os
 import secrets
+import socket
 import time
 from collections import defaultdict
 from pathlib import Path
@@ -193,12 +194,28 @@ async def info_page() -> FileResponse:
     return FileResponse(_STATIC_DIR / "info.html")
 
 
+def _get_local_ip() -> str:
+    """Hent lokal IP-adresse (den som har default route)."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "ukjent"
+
+
 @app.get("/api/system")
 async def system_info() -> dict:
     """Systeminformasjon og konfigurasjon."""
     info: dict = {
         "version": "0.1.0",
         "location": {"lat": _lat, "lon": _lon},
+        "network": {
+            "hostname": socket.gethostname(),
+            "local_ip": _get_local_ip(),
+        },
     }
 
     if _config:

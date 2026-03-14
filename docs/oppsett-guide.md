@@ -2,6 +2,8 @@
 
 Steg-for-steg-guide for å sette opp Raspberry Pi 3B+ med DS18B20-sensorer, RPi Relay Board og GeoLoop-programvaren via Docker.
 
+> **Hurtigoppsett:** Foretrekker du automatisk installasjon? Kjør `sudo bash scripts/setup-rpi.sh` — det gjør steg 1.3, 1.4, del 4 og del 5 automatisk. Du trenger fortsatt å gjøre maskinvarekoblingen (del 2–3) og sensor-ID-konfigurasjonen manuelt.
+
 Se [koblingsskjema.md](koblingsskjema.md) for detaljerte koblingsdiagrammer.
 
 ---
@@ -194,12 +196,23 @@ docker compose version
 
 ## Del 5: Sett opp GeoLoop
 
-### 5.1 Klon prosjektet
+### 5.1 Klon prosjektet og lås opp hemmeligheter
 
 ```bash
 cd ~
 git clone https://github.com/TommySkogstad/GeoLoop
 cd GeoLoop
+
+# Lås opp krypterte filer (krever GPG-nøkkel)
+# Kopier nøkkelen fra en maskin som har den:
+#   gpg --export-secret-keys CA1E41D13067550891949E067F35459C441CBC8B > /tmp/geoloop.gpg
+#   scp /tmp/geoloop.gpg pi@<rpi-ip>:/tmp/
+gpg --import /tmp/geoloop.gpg
+sudo apt install -y git-crypt
+git-crypt unlock
+
+# Verifiser at .env og config.yaml er dekryptert (lesbar tekst)
+cat .env
 ```
 
 ### 5.2 Cloudflare Tunnel (for ekstern tilgang)
@@ -214,13 +227,17 @@ cp .env.example .env
 nano .env
 ```
 
-Lim inn:
-```
-CLOUDFLARE_TUNNEL_TOKEN=eyJh...tokenet ditt...
-GEOLOOP_PASSWORD=ditt-passord-her
+Rediger `.env` med ditt Cloudflare Tunnel-token. Filen er allerede dekryptert fra git-crypt i steg 5.1.
+
+```bash
+# .env inneholder:
+# CLOUDFLARE_TUNNEL_TOKEN=...   (Cloudflare Tunnel-token)
+# GEOLOOP_PASSWORD=...          (passord for web-grensesnittet)
+# NTFY_URL=...                  (ntfy-server for push-varsler)
+# NTFY_TOPIC=...                (ntfy-topic)
 ```
 
-> **GEOLOOP_PASSWORD** er valgfritt. Hvis det er satt, kreves passord for å åpne dashboardet. Uten det er dashboardet åpent for alle med tilgang til URL-en.
+> **GEOLOOP_PASSWORD** er valgfritt. Hvis det er satt, kreves passord for å åpne dashboardet. Innlogging er rate-begrenset (5 forsøk per 5 min) og beskyttet med CSRF-token.
 
 ### 5.3 Konfigurer GeoLoop
 
@@ -317,12 +334,34 @@ Hvis sensor-verdier viser `null`, sjekk at sensor-ID-ene i `config.yaml` stemmer
 
 ## Del 7: Automatisk oppstart
 
-Docker starter automatisk ved oppstart av RPi så lenge `restart: unless-stopped` er satt i `docker-compose.yml` (allerede konfigurert).
+### Alternativ A: systemd-tjeneste (anbefalt)
 
-Verifiser:
+Hvis du brukte `setup-rpi.sh`, er systemd-tjenesten allerede installert:
+
+```bash
+sudo systemctl start geoloop      # Start
+sudo systemctl stop geoloop       # Stopp
+sudo systemctl restart geoloop    # Restart (bygger image på nytt)
+sudo systemctl status geoloop     # Status
+journalctl -u geoloop -f          # Logger
+```
+
+### Alternativ B: Docker restart-policy
+
+Docker starter containere automatisk ved oppstart av RPi så lenge `restart: unless-stopped` er satt i `docker-compose.yml` (allerede konfigurert).
+
 ```bash
 sudo systemctl enable docker
 sudo systemctl status docker
+```
+
+### Oppdatering
+
+```bash
+cd /opt/geoloop   # eller ~/GeoLoop
+git pull
+sudo systemctl restart geoloop
+# Eller: docker compose up -d --build
 ```
 
 ---

@@ -16,6 +16,11 @@ DRY_RUN=false
 LIBRESPOT_NAME="Rock"
 MOUNT_PATH=""
 
+validate_name() {
+    [[ "$1" =~ ^[A-Za-z0-9æøåÆØÅ\ \-]+$ ]] \
+        || { echo "Ugyldig --name: '$1' — kun bokstaver, sifre, mellomrom og bindestrek tillatt" >&2; exit 1; }
+}
+
 # --- Argument-parsing ---
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -29,10 +34,12 @@ while [[ $# -gt 0 ]]; do
                 exit 1
             fi
             LIBRESPOT_NAME="$2"
+            validate_name "$LIBRESPOT_NAME"
             shift 2
             ;;
         --name=*)
             LIBRESPOT_NAME="${1#*=}"
+            validate_name "$LIBRESPOT_NAME"
             shift
             ;;
         -*)
@@ -86,14 +93,13 @@ detect_dietpi_mount() {
         $found || { seen+=("$c"); unique+=("$c"); }
     done
 
-    echo "${unique[@]:-}"
+    printf '%s\n' "${unique[@]}"
 }
 
 verify_dietpi_boot() {
     local path="$1"
     [[ -d "$path" ]] || return 1
     [[ -f "$path/dietpi.txt" ]] && return 0
-    [[ -f "$path/Automation_Custom_Script.sh" ]] && return 0
     return 1
 }
 
@@ -123,7 +129,7 @@ if [[ -n "$MOUNT_PATH" ]]; then
     verify_dietpi_boot "$MOUNT_PATH" || fail "Ser ikke ut som DietPi-boot: $MOUNT_PATH (mangler dietpi.txt)"
 else
     info "Auto-detekterer DietPi SD-boot..."
-    mapfile -t found < <(detect_dietpi_mount | tr ' ' '\n' | sort -u | grep -v '^$' || true)
+    mapfile -t found < <(detect_dietpi_mount | sort -u | grep -v '^$' || true)
 
     if [[ ${#found[@]} -eq 0 ]]; then
         echo ""

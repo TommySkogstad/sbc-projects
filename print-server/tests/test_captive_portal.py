@@ -137,6 +137,32 @@ def test_save_accepts_64_hex_psk(client):
     assert resp.status_code == 200
 
 
+def test_hex_psk_written_without_quotes(client, portal):
+    """64-tegns hex PSK skal skrives uten anførselstegn til wpa_supplicant.conf."""
+    psk = "0123456789abcdef" * 4  # 64 hex
+    client.post("/save", data={"ssid": "hex-net", "psk": psk})
+    content = Path(portal.WPA_SUPPLICANT_CONF).read_text()
+    # Hex PSK skal IKKE ha anførselstegn (wpa_supplicant ville ellers tolket det som ASCII)
+    assert f"psk={psk}" in content
+    assert f'psk="{psk}"' not in content
+
+
+def test_ascii_psk_written_with_quotes(client, portal):
+    """ASCII PSK skal skrives med anførselstegn."""
+    client.post("/save", data={"ssid": "ascii-net", "psk": "passord123"})
+    content = Path(portal.WPA_SUPPLICANT_CONF).read_text()
+    assert 'psk="passord123"' in content
+
+
+def test_save_html_escapes_ssid(client):
+    """SSID i bekreftelses-HTML må escapes for å unngå XSS."""
+    xss = '<script>x</script>'
+    resp = client.post("/save", data={"ssid": xss, "psk": "passord123"})
+    assert resp.status_code == 200
+    assert b"<script>x</script>" not in resp.data
+    assert b"&lt;script&gt;x&lt;/script&gt;" in resp.data
+
+
 def test_save_rejects_missing_fields(client):
     assert client.post("/save", data={"ssid": "x"}).status_code == 400
     assert client.post("/save", data={"psk": "passord123"}).status_code == 400

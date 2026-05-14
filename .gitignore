@@ -10,3 +10,6 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# print-server — inneholder WiFi-passord og SSH-nøkkel i klartekst
+print-server/setup/armbian_first_run.txt

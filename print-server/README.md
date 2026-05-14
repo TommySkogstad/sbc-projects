@@ -1,6 +1,6 @@
 # Print-server
 
-Gjør en gammel USB-printer tilgjengelig som **AirPrint** (iOS) og **Mopria** (Android) via WiFi. Ingen ekstra app, ingen sky, ingen abonnement. `printer.local` annonseres via mDNS og dukker opp automatisk i alle moderne OS.
+Gjør en gammel USB-printer tilgjengelig som **AirPrint** (iOS) og **Mopria** (Android) via WiFi. Ingen ekstra app, ingen sky, ingen abonnement. `printer-rock.local` annonseres via mDNS og dukker opp automatisk i alle moderne OS.
 
 ## Stack
 
@@ -42,7 +42,7 @@ Gjør en gammel USB-printer tilgjengelig som **AirPrint** (iOS) og **Mopria** (A
 ### Fase 3 — Første boot og system-baseline (auto, ~2-3 min)
 
 first-boot.service kjører automatisk ved boot som root:
-- Setter hostname til `printer`
+- Setter hostname til `printer-rock`
 - Konfigurerer WiFi fra `armbian_first_run.txt`
 - Installerer CUPS, Avahi, ipp-usb, printer-drivers
 - Starter services og setter opp Avahi-annonsering
@@ -51,7 +51,7 @@ Finn IP når den er oppe:
 ```bash
 arp -a | grep -i rock
 ssh root@<IP>
-# eller direkte: ssh root@printer.local
+# eller direkte: ssh root@printer-rock.local
 ```
 
 ### Fase 4 — CUPS-konfigurasjon (5 min)
@@ -62,7 +62,7 @@ usermod -aG lpadmin <bruker>
 systemctl restart cups
 ```
 
-CUPS web-UI: `http://printer.local:631`
+CUPS web-UI: `http://printer-rock.local:631`
 
 ### Fase 5 — Koble til printeren (10 min)
 
@@ -73,10 +73,10 @@ CUPS web-UI: `http://printer.local:631`
 
 ### Fase 6 — AirPrint/Mopria-konfigurasjon (5 min)
 
-Filen `/etc/avahi/services/airprint.service` er allerede provisjonert av flash.sh, men må tilpasses:
+Filen `/etc/avahi/services/airprint.service` er allerede provisjonert av first-boot.service, men må tilpasses:
 
 ```bash
-ssh root@printer.local
+ssh root@printer-rock.local
 nano /etc/avahi/services/airprint.service
 ```
 
@@ -85,7 +85,7 @@ Rediger `PRINTER_NAME`, `PRINTER_DESCRIPTION`, og `note=` basert på CUPS-setup 
 ```xml
 <txt-record>rp=printers/PRINTER_NAME</txt-record>
 <txt-record>ty=HP LaserJet Pro M404n</txt-record>
-<txt-record>adminurl=http://printer.local:631/printers/PRINTER_NAME</txt-record>
+<txt-record>adminurl=http://printer-rock.local:631/printers/PRINTER_NAME</txt-record>
 <txt-record>note=Stuen</txt-record>
 ```
 

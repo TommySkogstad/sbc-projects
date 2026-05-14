@@ -94,6 +94,34 @@ if [[ -f /tmp/setup/add-printer.sh ]]; then
 fi
 
 # --------------------------------------------------------------------------
+# WiFi-onboarding (captive portal + AP-fallback)
+# --------------------------------------------------------------------------
+if [[ -f /tmp/setup/captive-portal.py ]]; then
+    cp /tmp/setup/captive-portal.py /usr/local/bin/captive-portal.py
+    chmod 755 /usr/local/bin/captive-portal.py
+fi
+
+if [[ -f /tmp/setup/hostapd.conf ]]; then
+    cp /tmp/setup/hostapd.conf /etc/hostapd/hostapd.conf
+    chmod 644 /etc/hostapd/hostapd.conf
+    # hostapd default-config peker på DAEMON_CONF=/etc/hostapd/hostapd.conf
+    sed -i 's|^#DAEMON_CONF=.*|DAEMON_CONF="/etc/hostapd/hostapd.conf"|' \
+        /etc/default/hostapd 2>/dev/null || true
+fi
+
+if [[ -f /tmp/setup/dnsmasq.conf ]]; then
+    cp /tmp/setup/dnsmasq.conf /etc/dnsmasq.d/captive-portal.conf
+fi
+
+if [[ -f /tmp/setup/wifi-check.service ]]; then
+    cp /tmp/setup/wifi-check.service /etc/systemd/system/wifi-check.service
+fi
+
+if [[ -f /tmp/setup/captive-portal.service ]]; then
+    cp /tmp/setup/captive-portal.service /etc/systemd/system/captive-portal.service
+fi
+
+# --------------------------------------------------------------------------
 # Auto-oppdatering (unattended-upgrades)
 # --------------------------------------------------------------------------
 log "Aktiverer unattended-upgrades..."
@@ -107,16 +135,21 @@ EOF
 # Aktiver tjenester
 # --------------------------------------------------------------------------
 log "Aktiverer og starter tjenester..."
+systemctl daemon-reload || true
 systemctl enable cups
 systemctl enable avahi-daemon
 systemctl enable unattended-upgrades
+systemctl enable wifi-check.service || true
 
 systemctl start cups || true
 systemctl start avahi-daemon || true
 
-# Dnsmasq og hostapd startes kun av wifi-check ved AP-fallback
+# Dnsmasq, hostapd og captive-portal startes kun av wifi-check ved AP-fallback
 systemctl disable dnsmasq || true
 systemctl disable hostapd || true
+systemctl disable captive-portal.service || true
+# Unmask hostapd (Armbian masker den som default)
+systemctl unmask hostapd 2>/dev/null || true
 
 # --------------------------------------------------------------------------
 # Skriv sentinel og deaktiver denne tjenesten

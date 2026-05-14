@@ -10,6 +10,8 @@ Gjør en gammel USB-printer tilgjengelig som **AirPrint** (iOS) og **Mopria** (A
 - **Avahi** — mDNS-annonsering (AirPrint/Mopria)
 - **ipp-usb** — moderne IPP-over-USB driver for nyere printere
 - **printer-driver-all + hplip** — bred driverstøtte
+- **hostapd + dnsmasq** — WiFi AP-fallback ved tilkoblingsfeil
+- **Captive portal** (Flask) — WiFi-onboarding med SSID-scanning og nettskjema
 - **flash.sh** — laptop-side provisioning av WiFi, SSH, og services
 
 ## Hardware bestilt
@@ -112,10 +114,19 @@ Skip hvis Fase 6 funker — AirPrint/Mopria dekker hele behovet for mobil-utskri
 - Cloudflare Tunnel for utskrift hjemmefra
 - CLI-snarvei: `print rapport.pdf` fra terminal
 
+## WiFi-onboarding
+
+Hvis enheten mister WiFi-tilkoblingen, startes en AP-fallback automatisk:
+
+1. `wifi-check.service` kjører hvert 2. minutt og verifiserer forbindelse
+2. Hvis tilkoblingen feiler: `hostapd` starter AP `printer-rock-setup` (192.168.4.1)
+3. Brukeren kobler til AP og får opp **captive portal** i nettleseren
+4. Web-skjemaet tillater SSID-scanning og PWA2-passord-oppgave
+5. Etter lagring: enhet prøver å koble til igjen, AP stoppes automatisk
+
 ## Hva vi IKKE bygger nå
 
 - Cloud-print backend
-- Captive portal-onboarding
 - Markedsanalyse / produktversjon (Rock 3C 85×56 mm er for stor — produkt ville krevd Orange Pi Zero 2W eller Radxa Zero 3W)
 - Branding, support, GDPR-vurdering
 

@@ -1,0 +1,17 @@
+[Unit]
+Description=Rock 3C captive portal for WiFi-onboarding
+After=hostapd.service dnsmasq.service
+Requires=hostapd.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/local/bin/captive-portal.py
+Restart=on-failure
+RestartSec=3
+# Captive portal must bind to port 80 (iOS ATS-unntak)
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+StandardOutput=append:/var/log/captive-portal.log
+StandardError=append:/var/log/captive-portal.log
+
+[Install]
+WantedBy=multi-user.target

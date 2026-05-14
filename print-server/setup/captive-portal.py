@@ -13,6 +13,7 @@ når AP-fallback er aktiv.
 """
 from __future__ import annotations
 
+import html
 import os
 import re
 import subprocess
@@ -89,7 +90,13 @@ def _read_existing_networks(path: str) -> list[str]:
 
 
 def _format_network_block(ssid: str, psk: str) -> str:
-    return f'network={{\n    ssid="{ssid}"\n    psk="{psk}"\n}}\n'
+    # 64-tegns hex PSK skal IKKE ha anførselstegn — wpa_supplicant tolker
+    # det ellers som ASCII-passphrase, og koblingen feiler.
+    if _PSK_HEX_RE.match(psk):
+        psk_line = f"    psk={psk}\n"
+    else:
+        psk_line = f'    psk="{psk}"\n'
+    return f'network={{\n    ssid="{ssid}"\n{psk_line}}}\n'
 
 
 def write_wpa_supplicant(ssid: str, psk: str, path: str | None = None) -> None:
@@ -104,12 +111,20 @@ def write_wpa_supplicant(ssid: str, psk: str, path: str | None = None) -> None:
 
     target_path = Path(target)
     tmp = target_path.with_suffix(target_path.suffix + ".tmp")
-    tmp.write_text(content)
     try:
-        os.chmod(tmp, 0o600)
-    except PermissionError:
-        pass
-    os.replace(tmp, target_path)
+        tmp.write_text(content)
+        try:
+            os.chmod(tmp, 0o600)
+        except PermissionError:
+            pass
+        os.replace(tmp, target_path)
+    except OSError:
+        # Rydd opp tmp-fil hvis rename feiler — ellers blir den liggende.
+        try:
+            tmp.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise
 
 
 def _do_reconnect() -> None:
@@ -290,8 +305,11 @@ def save():
     write_wpa_supplicant(ssid, psk)
     # Svar 200 FØRST, reconnect schedulert i bakgrunnstråd (3s delay)
     schedule_reconnect(3)
+    # SSID kan inneholde HTML-spesialtegn (<, >, &) som passerer ASCII-regex
+    # — escape før template-formatering for å unngå XSS.
+    safe_ssid = html.escape(ssid)
     return _no_cache(
-        app.response_class(_SAVED_HTML.format(ssid=ssid), mimetype="text/html")
+        app.response_class(_SAVED_HTML.format(ssid=safe_ssid), mimetype="text/html")
     )
 
 

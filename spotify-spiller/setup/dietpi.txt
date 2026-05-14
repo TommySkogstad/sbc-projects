@@ -1,0 +1,30 @@
+##### DietPi automation for Spotify-spiller (Rock 3C) #####
+# Generert av flash.sh — ikke rediger manuelt på SD-kortet
+# Dokumentasjon: https://dietpi.com/docs/usage/#how-to-do-an-automatic-base-installation-at-first-boot-dietpi-automation
+
+### Nettverk ###
+AUTO_SETUP_NET_ETHERNET_ENABLED=1
+AUTO_SETUP_NET_WIFI_ENABLED=0
+AUTO_SETUP_DHCP_TO_STATIC=0
+
+### Hostname ###
+AUTO_SETUP_NET_HOSTNAME=spotify-rock
+
+### Automatisering ###
+AUTO_SETUP_AUTOMATED=1
+
+### Passord ###
+# Bytt ved første SSH! Standard DietPi-passord — dokumentert i spotify-spiller/README.md
+AUTO_SETUP_GLOBAL_PASSWORD=dietpi
+
+### Statistikk ###
+SURVEY_OPTED_IN=0
+
+### Software-installasjon ###
+# ID 39 = raspotify (Spotify Connect via librespot)
+AUTO_SETUP_INSTALL_SOFTWARE_ID=39
+
+### Locale/Timezone ###
+AUTO_SETUP_LOCALE=en_GB.UTF-8
+AUTO_SETUP_KEYBOARD_LAYOUT=gb
+AUTO_SETUP_TIMEZONE=Europe/Oslo

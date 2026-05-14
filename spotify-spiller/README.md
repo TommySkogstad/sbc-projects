@@ -24,51 +24,85 @@ DietPi har raspotify, Snapcast, Squeezelite, Shairport-sync m.fl. som ferdige so
 
 **Totalt: ~499 kr per node**
 
-## Build-plan
+## Brukerflyt (automatisert SD-bundle)
 
-### Fase 1 — Flash DietPi (10 min)
+### Steg 1 — Flash DietPi (~10 min)
 
-1. Last ned [DietPi for Rock 3C](https://dietpi.com/downloads/images/) (eller bruk Armbian + manuell raspotify hvis foretrukket)
+1. Last ned [DietPi for Rock 3C](https://dietpi.com/downloads/images/) (Bookworm-imagen)
 2. Flash til microSD med Etcher
-3. Mount SD, rediger `dietpi-wifi.txt` og `dietpi.txt` (WiFi-config + automatisk førstegangsoppsett)
-4. Sett SD i Rock 3C, koble strøm + AUX-kabel
+3. La SD-kortet bli montert i laptop (auto-mountes som `/media/<bruker>/boot`)
 
-### Fase 2 — Førstegangsoppsett (15 min)
+### Steg 2 — Kjør flash.sh (~1 min)
 
-1. SSH inn: `ssh root@dietpi.local` (default passord: `dietpi`, byttes ved første boot)
-2. Sett hostname: `dietpi-config` → Security → Hostname → `spotify-stua` (eller annet)
-3. Velg lyd-driver: `dietpi-config` → Audio Options → ALSA + `Onboard sound`
-4. Verifiser lyd: `speaker-test -c 2 -t wav`
-
-### Fase 3 — Raspotify (5 min)
+Fra repo-root:
 
 ```bash
-dietpi-software install 39   # Raspotify
+./spotify-spiller/flash.sh
 ```
 
-Eller manuelt:
+Scriptet auto-detekterer det monterte SD-kortet. Alternativer:
+
 ```bash
-curl -sL https://dtcooper.github.io/raspotify/install.sh | sh
+# Oppgi mount-path eksplisitt
+./spotify-spiller/flash.sh /media/bruker/boot
+
+# Multirom: gi enheten et unikt navn
+./spotify-spiller/flash.sh --name "Kjøkken"
+
+# Forhåndsvisning uten å skrive noe
+./spotify-spiller/flash.sh --dry-run
 ```
 
-### Fase 4 — Konfigurasjon
+### Steg 3 — Boot (~5–10 min)
 
-Rediger `/etc/raspotify/conf`:
+1. Eject SD-kortet trygt
+2. Sett SD i Rock 3C
+3. Koble til: strøm (USB-C 5V/3A) + ethernet + 3.5mm AUX
+4. Vent 5–10 min — DietPi henter pakker og installerer raspotify automatisk
 
+**"Rock" dukker opp i Spotify-appen.** Trykk på enhetsikon og velg enheten. Lyden kommer ut av AUX.
+
+### Standardoppsett
+
+| Parameter | Verdi |
+|---|---|
+| Hostname | `spotify-rock` |
+| Spotify Connect-navn | `Rock` (overstyr med `--name <navn>`) |
+| Nett | DHCP, kablet ethernet |
+| Audio | ALSA, RK3566 onboard AUX |
+| SSH-passord | `dietpi` — **bytt ved første innlogging!** |
+
+### Etter boot — verifisering
+
+```bash
+# SSH inn
+ssh root@spotify-rock.local
+
+# Test lyd
+speaker-test -c 2 -t wav
+
+# Sjekk raspotify-status
+systemctl status raspotify
 ```
-LIBRESPOT_NAME="Stua"
-LIBRESPOT_BITRATE="320"
-LIBRESPOT_INITIAL_VOLUME="60"
-LIBRESPOT_DEVICE_TYPE="speaker"
-LIBRESPOT_BACKEND="alsa"
-LIBRESPOT_DEVICE="default"
+
+### Feilsøking
+
+**"Rock" dukker ikke opp i Spotify-appen:**
+- Sjekk at enheten har fått DHCP-adresse i ruterens klientliste
+- Verifiser raspotify er oppe: `ssh root@spotify-rock.local` → `systemctl status raspotify`
+- Sjekk `/var/log/raspotify/current` for feilmeldinger
+
+**Ingen lyd fra AUX:**
+- Kjør `aplay -l` og verifiser at RK3566 onboard-kort er listet
+- Test ALSA direkte: `speaker-test -c 2 -t wav -D default`
+- Sjekk volum: `alsamixer`
+
+**DAC-kvalitet:**
+```bash
+# Verifiser 24-bit/96 KHz
+aplay -l
+cat /proc/asound/card*/pcm*/sub*/hw_params
 ```
-
-Restart: `systemctl restart raspotify`
-
-### Fase 5 — Test
-
-Åpne Spotify-app på telefon → trykk på enhetsikon → velg "Stua". Lyden skal komme ut av AUX-porten.
 
 ## Multirom-utvidelse (Snapcast)
 
@@ -123,4 +157,47 @@ Alle kan kjøre side-om-side på samme Rock 3C så lenge volum og prioritet hån
 
 ## Status
 
-- 2026-05-14: Planlagt. Venter på Rock 3C-bestilling fra Kjell sammen med print-server-hardware.
+- 2026-05-14: SD-bundle implementert (`flash.sh` + DietPi-automasjon). Klar for hardware-test når Rock 3C ankommer.
+
+<details>
+<summary>Alternativ: manuelt oppsett (uten flash.sh)</summary>
+
+### Fase 1 — Flash DietPi
+
+1. Flash vanilla DietPi Bookworm for Rock 3C med Etcher
+2. Mount SD, sett `dietpi.txt` manuelt (se `setup/dietpi.txt` for eksempel)
+
+### Fase 2 — Førstegangsoppsett
+
+```bash
+ssh root@dietpi.local   # default passord: dietpi
+```
+
+1. Sett hostname: `dietpi-config` → Security → Hostname → `spotify-rock`
+2. Velg lyd-driver: `dietpi-config` → Audio Options → ALSA + Onboard sound
+3. Verifiser lyd: `speaker-test -c 2 -t wav`
+
+### Fase 3 — Raspotify
+
+```bash
+dietpi-software install 39
+```
+
+### Fase 4 — Konfigurasjon
+
+Rediger `/etc/raspotify/conf`:
+
+```
+LIBRESPOT_NAME="Rock"
+LIBRESPOT_BITRATE="320"
+LIBRESPOT_INITIAL_VOLUME="60"
+LIBRESPOT_DEVICE_TYPE="speaker"
+LIBRESPOT_BACKEND="alsa"
+LIBRESPOT_DEVICE="default"
+```
+
+```bash
+systemctl restart raspotify
+```
+
+</details>

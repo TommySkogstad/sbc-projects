@@ -1,41 +1,53 @@
-# Rock 3C
+# SBC Projects
 
-Samling av hobby-prosjekter bygget på **Radxa Rock 3C** ettkortsdatamaskin. Hver underkatalog inneholder build-plan og kode for et separat prosjekt — alle deler samme grunnhardware og kan kjøres på dedikerte enheter eller side-om-side på samme node.
-
-## Hardware
-
-**Radxa Rock 3C 1 GB** (artikkelnr 88129 hos Kjell, 499 kr) er valgt som standard. Specs:
-
-- Rockchip RK3566 quad-core Cortex-A55 @ 1.6 GHz
-- 1 GB LPDDR4 RAM
-- WiFi 5 + Bluetooth 5.0
-- 3× USB 2.0, 1× USB 3.0, Gigabit Ethernet
-- HDMI 2.0 (4K/60 Hz)
-- **3.5mm AUX (24-bit/96 KHz)**
-- 40-pin GPIO header (Pi-kompatibel)
-- M.2 M-key 2230 (PCIe 2.1 x1) — ikke 2280
-- USB-C strøm: 5V/3A (5V/4A med M.2 SSD)
-- Form-faktor: 85×56 mm
+Samling av hobby-prosjekter på single-board computers (SBC) — Radxa Rock-serien og Raspberry Pi. Hver underkatalog er et selvstendig prosjekt med egen build-plan, kode og dokumentasjon. Felles repo for å holde antall GitHub-prosjekter nede og dele oppsett-skript på tvers.
 
 ## Prosjekter
 
-| Prosjekt | Status | Mappe |
-|---|---|---|
-| Print-server (AirPrint/Mopria via CUPS) | Build-plan klar, venter på hardware | [`print-server/`](print-server/) |
-| Spotify-spiller (Spotify Connect via raspotify) | Planlagt | [`spotify-spiller/`](spotify-spiller/) |
+| Prosjekt | Hardware | Status | Mappe |
+|---|---|---|---|
+| **GeoLoop** | Raspberry Pi 3B+ | Produksjon — styrer vannbåren bakkevarme | [`geoloop/`](geoloop/) |
+| **Print-server** | Rock 3C 1 GB | Build-plan klar, venter hardware | [`print-server/`](print-server/) |
+| **Spotify-spiller** | Rock 3C 1 GB | Planlagt | [`spotify-spiller/`](spotify-spiller/) |
+
+## Hardware
+
+### Radxa Rock 3C 1 GB (~499 kr Kjell, art.nr 88129)
+
+Lavterskel SBC for enkeltformål-prosjekter. Innebygd 24-bit/96 KHz AUX gjør den ideell for Spotify-spiller.
+
+- Rockchip RK3566 (4× Cortex-A55 @ 1.6 GHz)
+- 1 GB LPDDR4
+- WiFi 5 + BT 5.0, Gigabit Ethernet
+- 3× USB 2.0, 1× USB 3.0, HDMI 2.0 (4K/60)
+- 3.5mm AUX, 40-pin GPIO
+
+### Radxa Rock 4C+ 4 GB (~799 kr Kjell, art.nr 88142) — vurdert
+
+Kraftigere SBC for prosjekter som krever Docker, multi-service eller GPU-akselerasjon.
+
+- Rockchip RK3399-T (big.LITTLE: 2× A72 @ 1.5 GHz + 4× A53 @ 1 GHz)
+- 4 GB LPDDR4, Mali T860MP4 GPU
+- Dual Micro-HDMI (4K + 2K), 2× USB 2.0 + 2× USB 3.0
+- Innebygd strømbryter, ekstern antenne-tilkobling
+- Kandidat for: SHS-host (self-hosted Homey), Frigate NVR, info-skjerm, retro-spillkonsoll
+
+### Raspberry Pi 3B+
+
+I bruk i GeoLoop med Open-Smart GPIO Expansion + RPi Relay Board for VP-styring og sirkulasjonspumpe.
 
 ## Felles OS-anbefaling
 
-**DietPi** eller **Armbian Bookworm Minimal** for Rock 3C. Begge gir minimal Debian-base med god støtte for RK3566 og softwarekatalog som dekker både CUPS, raspotify, Snapcast, og resten av økosystemet.
+| Bruksområde | OS |
+|---|---|
+| Lett enkeltformål (print-server) | Armbian Bookworm Minimal |
+| Audio-stack (Spotify, Snapcast, AirPlay) | DietPi Bookworm |
+| Industrial/IoT (GeoLoop) | Raspberry Pi OS Lite |
+| Docker-hub (SHS, Frigate) | Armbian Bookworm + Docker |
 
-Flash til microSD med Etcher eller `dd`. NVMe er valgfritt men ikke nødvendig for noen av prosjektene per nå.
+## Hemmeligheter
 
-## Hvorfor Rock 3C?
-
-- 499 kr for full Linux-PC er røverkjøp
-- Innebygd AUX gjør Spotify-spiller plug-and-play
-- Pi-kompatibel GPIO og form-faktor (~Pi 4)
-- Mer USB-porter enn Pi Zero, mindre fikkel enn Pi 5
+`geoloop/.env` og `geoloop/config.yaml` er git-crypt-kryptert med samme GPG-nøkkel som de andre prosjektene (`CA1E41D13067550891949E067F35459C441CBC8B`). På nye maskiner: `git-crypt unlock` etter clone.
 
 ## Lisens
 

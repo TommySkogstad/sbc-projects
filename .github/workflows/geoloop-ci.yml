@@ -1,10 +1,20 @@
-name: CI
+name: GeoLoop CI
 
 on:
   push:
     branches: [main]
+    paths:
+      - "geoloop/**"
+      - ".github/workflows/geoloop-ci.yml"
   pull_request:
     branches: [main]
+    paths:
+      - "geoloop/**"
+      - ".github/workflows/geoloop-ci.yml"
+
+defaults:
+  run:
+    working-directory: geoloop
 
 jobs:
   test:

@@ -10,6 +10,7 @@ Gjør en gammel USB-printer tilgjengelig som **AirPrint** (iOS) og **Mopria** (A
 - **Avahi** — mDNS-annonsering (AirPrint/Mopria)
 - **ipp-usb** — moderne IPP-over-USB driver for nyere printere
 - **printer-driver-all + hplip** — bred driverstøtte
+- **flash.sh** — laptop-side provisioning av WiFi, SSH, og services
 
 ## Hardware bestilt
 
@@ -24,24 +25,33 @@ Gjør en gammel USB-printer tilgjengelig som **AirPrint** (iOS) og **Mopria** (A
 
 1. Last ned Armbian Bookworm Minimal for Rock 3C fra https://www.armbian.com/rock-3c/
 2. Last ned [balenaEtcher](https://www.balena.io/etcher/)
-3. Forbered WiFi-config (SSID + passord) og SSH-key
+3. Forbered SSH-nøkkel: `ssh-keygen -t ed25519` hvis du ikke har en
 
-### Fase 2 — Førstegangsoppsett (15 min)
+### Fase 2 — Flash og laptop-side provisioning (10 min)
 
 1. Flash Armbian til microSD med Etcher
-2. Mount SD på laptop, legg til WiFi-config og SSH-key i `armbian_first_run.txt`
-3. Sett SD i Rock 3C, koble strøm
-4. Finn IP via router eller `arp -a`, SSH inn som `root`
+2. Kopier `setup/armbian_first_run.txt.example` til `setup/armbian_first_run.txt`
+3. Rediger `setup/armbian_first_run.txt`: sett WiFi-SSID, passord, og lim inn SSH-nøkkelen fra `cat ~/.ssh/id_ed25519.pub`
+4. Mount SD på laptop. Skript auto-detekterer eller spør om partisjon:
+   ```bash
+   sudo ./flash.sh
+   ```
+   Med `--dry-run` for test. Copierer setup-filer og aktiverer first-boot.service.
+5. Sett SD i Rock 3C, koble til USB-C strøm (5V/3A)
 
-### Fase 3 — System-baseline (10 min)
+### Fase 3 — Første boot og system-baseline (auto, ~2-3 min)
 
+first-boot.service kjører automatisk ved boot som root:
+- Setter hostname til `printer`
+- Konfigurerer WiFi fra `armbian_first_run.txt`
+- Installerer CUPS, Avahi, ipp-usb, printer-drivers
+- Starter services og setter opp Avahi-annonsering
+
+Finn IP når den er oppe:
 ```bash
-apt update && apt upgrade -y
-apt install -y avahi-daemon cups cups-filters cups-bsd \
-  printer-driver-all hplip ipp-usb ghostscript \
-  python3 python3-pip
-hostnamectl set-hostname printer
-systemctl enable --now avahi-daemon ipp-usb cups
+arp -a | grep -i rock
+ssh root@<IP>
+# eller direkte: ssh root@printer.local
 ```
 
 ### Fase 4 — CUPS-konfigurasjon (5 min)
@@ -61,31 +71,27 @@ CUPS web-UI: `http://printer.local:631`
 3. Legg til printer via CUPS web-UI, autodriver
 4. Test: `echo "hei" | lp -d <printer-name>`
 
-### Fase 6 — AirPrint/Mopria (5 min)
+### Fase 6 — AirPrint/Mopria-konfigurasjon (5 min)
 
-Opprett `/etc/avahi/services/airprint.service`:
+Filen `/etc/avahi/services/airprint.service` er allerede provisjonert av flash.sh, men må tilpasses:
+
+```bash
+ssh root@printer.local
+nano /etc/avahi/services/airprint.service
+```
+
+Rediger `PRINTER_NAME`, `PRINTER_DESCRIPTION`, og `note=` basert på CUPS-setup fra fase 5:
 
 ```xml
-<?xml version="1.0" standalone='no'?>
-<!DOCTYPE service-group SYSTEM "avahi-service.dtd">
-<service-group>
-  <name replace-wildcards="yes">AirPrint %h</name>
-  <service>
-    <type>_ipp._tcp</type>
-    <subtype>_universal._sub._ipp._tcp</subtype>
-    <port>631</port>
-    <txt-record>txtvers=1</txt-record>
-    <txt-record>qtotal=1</txt-record>
-    <txt-record>rp=printers/PRINTER_NAME</txt-record>
-    <txt-record>ty=PRINTER_DESCRIPTION</txt-record>
-    <txt-record>adminurl=http://printer.local:631/printers/PRINTER_NAME</txt-record>
-    <txt-record>note=Living Room</txt-record>
-    <txt-record>priority=0</txt-record>
-    <txt-record>product=(GPL Ghostscript)</txt-record>
-    <txt-record>pdl=application/pdf,image/jpeg,image/urf</txt-record>
-    <txt-record>URF=W8,SRGB24,CP1,RS600</txt-record>
-  </service>
-</service-group>
+<txt-record>rp=printers/PRINTER_NAME</txt-record>
+<txt-record>ty=HP LaserJet Pro M404n</txt-record>
+<txt-record>adminurl=http://printer.local:631/printers/PRINTER_NAME</txt-record>
+<txt-record>note=Stuen</txt-record>
+```
+
+Restart Avahi:
+```bash
+systemctl restart avahi-daemon
 ```
 
 Test fra iOS/Android — printeren skal dukke opp automatisk i utskriftsdialogen.

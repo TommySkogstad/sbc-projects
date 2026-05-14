@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d1b2a">
+    <title>GeoLoop — Systeminformasjon</title>
+    <link rel="icon" type="image/svg+xml" href="/static/logo.svg">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css?v=9">
+</head>
+<body>
+    <header>
+        <h1><a href="/" class="header-link"><img src="/static/logo.svg" alt="GeoLoop" class="header-logo">GeoLoop</a></h1>
+        <nav class="nav-links">
+            <a href="/">Dashboard</a>
+            <a href="/info" class="active">System</a>
+        </nav>
+        <span class="meta header-right"></span>
+    </header>
+
+    <main>
+        <section class="card">
+            <h2>System</h2>
+            <table class="kv-table" id="system-tbl">
+                <tr><td colspan="2" class="meta">Laster...</td></tr>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Anlegg</h2>
+            <table class="kv-table" id="loop-tbl">
+                <tr><td colspan="2" class="meta">Laster...</td></tr>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>Temperatursensorer</h2>
+            <div class="info-table-wrap">
+                <table class="info-table">
+                    <thead>
+                        <tr>
+                            <th>Sensor</th>
+                            <th>Posisjon</th>
+                            <th>Temperatur nå</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sensor-tbody">
+                        <tr><td colspan="3" class="meta">Laster...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Reléer</h2>
+            <div class="info-table-wrap">
+                <table class="info-table">
+                    <thead>
+                        <tr>
+                            <th>Kanal</th>
+                            <th>GPIO-pinne</th>
+                            <th>Tilkobling</th>
+                        </tr>
+                    </thead>
+                    <tbody id="relay-tbody">
+                        <tr><td colspan="3" class="meta">Laster...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Styringslogikk</h2>
+            <p class="info-description">
+                GeoLoop bruker prediktiv styring basert på 24-timers værprognose fra
+                <strong>api.met.no</strong>. Hvert 10. minutt henter systemet oppdatert prognose
+                og teller hvor mange av de neste 24 timene som faller innenfor de to temperatursonene.
+                Basert på dette bestemmes risikonivå og handling.
+            </p>
+
+            <h3 class="info-subheading">Temperatursonene</h3>
+            <p class="info-description">
+                De fire sliderne på dashboard-siden styrer to temperatursoner som brukes til å vurdere isrisiko:
+            </p>
+            <div class="info-description">
+                <p><strong>Faresone</strong> (standard: <span id="info-ice-range">-3.0°C til +3.0°C</span>)<br>
+                Det brede temperaturområdet der isdannelse kan forekomme. Systemet teller hvor mange timer
+                i prognosen som faller innenfor dette intervallet. Jo flere timer, jo høyere risiko.
+                Utvid faresonen for å gjøre systemet mer forsiktig (varme slås på oftere),
+                eller innsnevr den for å spare energi.</p>
+
+                <p style="margin-top: 0.5rem"><strong>Kritisk sone</strong> (standard: <span id="info-crit-range">-1.0°C til +2.0°C</span>)<br>
+                Et smalere intervall rundt 0°C der is er mest sannsynlig.
+                Brukes i to sammenhenger: hvis det er nedbør innenfor kritisk sone gir det umiddelbart
+                <span class="risk-badge risk-high">HØY</span> risiko, og ≥4 timer i kritisk sone
+                uten nedbør gir også <span class="risk-badge risk-high">HØY</span>.
+                Utvid kritisk sone for å fange opp flere situasjoner med nedbør nær frysepunktet.</p>
+            </div>
+
+            <h3 class="info-subheading">Beslutningstabell</h3>
+            <div class="info-table-wrap">
+                <table class="info-table">
+                    <thead>
+                        <tr>
+                            <th>Risikonivå</th>
+                            <th>Kriterier</th>
+                            <th>Handling</th>
+                        </tr>
+                    </thead>
+                    <tbody id="risk-table-body">
+                        <tr>
+                            <td><span class="risk-badge risk-high">HØY</span></td>
+                            <td>Nedbør i kritisk sone, eller ≥4t i kritisk sone</td>
+                            <td>Slå PÅ</td>
+                        </tr>
+                        <tr>
+                            <td><span class="risk-badge risk-moderate">MODERAT</span></td>
+                            <td>≥6 timer i faresonen</td>
+                            <td>Slå PÅ</td>
+                        </tr>
+                        <tr>
+                            <td><span class="risk-badge risk-low">LAV</span></td>
+                            <td>2–5 timer i faresonen</td>
+                            <td>Behold tilstand</td>
+                        </tr>
+                        <tr>
+                            <td><span class="risk-badge risk-none">INGEN</span></td>
+                            <td>&lt; 2 timer i faresonen</td>
+                            <td>Slå AV</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3 class="info-subheading">Manuell overstyring</h3>
+            <p class="info-description">
+                Med knappene <strong>AV</strong>, <strong>AUTO</strong> og <strong>PÅ</strong> på dashboard-siden
+                kan du overstyre den automatiske logikken. Overstyringen er
+                <strong>vedvarende</strong> — den gjelder til du eksplisitt trykker <strong>AUTO</strong> igjen.
+                Kontrollsyklusen hopper over evaluering så lenge manuell overstyring er aktiv.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>Push-varsler (ntfy)</h2>
+            <p class="info-description">
+                GeoLoop sender push-varsler ved viktige hendelser (isfare, modusendringer, terskelendringer).
+                Følg stegene under for å motta varsler på telefonen.
+            </p>
+
+            <h3 class="info-subheading">1. Installer appen</h3>
+            <p class="info-description">
+                Last ned <strong>ntfy</strong> fra
+                <a href="https://play.google.com/store/apps/details?id=io.heckel.ntfy" target="_blank">Google Play</a> eller
+                <a href="https://apps.apple.com/app/ntfy/id1625396347" target="_blank">App Store</a>.
+            </p>
+
+            <h3 class="info-subheading">2. Legg til server</h3>
+            <p class="info-description">
+                Åpne appen → Innstillinger → <strong>Administrer kontoer</strong> → <strong>Legg til konto</strong>
+            </p>
+            <table class="kv-table">
+                <tr><td>Server-URL</td><td><code>https://ntfy.tommytv.no</code></td></tr>
+                <tr><td>Brukernavn</td><td><code>tommy</code></td></tr>
+                <tr><td>Passord</td><td><code>tommy</code></td></tr>
+            </table>
+
+            <h3 class="info-subheading">3. Abonner på topic</h3>
+            <p class="info-description">
+                Trykk <strong>+</strong> → Skriv inn topic: <code>geoloop-21a</code><br>
+                Velg serveren <code>ntfy.tommytv.no</code> (ikke ntfy.sh).
+            </p>
+
+            <h3 class="info-subheading">Hendelser</h3>
+            <div class="info-table-wrap">
+                <table class="info-table">
+                    <thead>
+                        <tr>
+                            <th>Hendelse</th>
+                            <th>Prioritet</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Isfare — varme PÅ</td><td>Høy</td></tr>
+                        <tr><td>Modus endret: PÅ</td><td>Normal</td></tr>
+                        <tr><td>Modus endret: AV</td><td>Normal</td></tr>
+                        <tr><td>Modus endret: AUTO</td><td>Normal</td></tr>
+                        <tr><td>Temperaturgrenser endret</td><td>Normal</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Database</h2>
+            <table class="kv-table" id="db-tbl">
+                <tr><td colspan="2" class="meta">Laster...</td></tr>
+            </table>
+        </section>
+        <!-- Systeminformasjon -->
+        <footer class="system-footer" id="system-footer">
+            <span id="sys-host" class="meta"></span>
+            <span id="sys-ip" class="meta"></span>
+            <span id="sys-version" class="meta"></span>
+        </footer>
+    </main>
+
+    <script>
+    (function () {
+        "use strict";
+
+        var SENSOR_NAMES = {
+            loop_inlet:  "Sløyfe inn (T1)",
+            loop_outlet: "Sløyfe ut (T2)",
+            hp_inlet:    "VP inn (T3)",
+            hp_outlet:   "VP ut (T4)",
+            tank:        "Tank (T5)"
+        };
+        var SENSOR_LOCATIONS = {
+            loop_inlet:  "Tank \u2192 bakkesl\u00f8yfe \u2014 turtemperatur til bakken",
+            loop_outlet: "Bakkesl\u00f8yfe \u2192 tank \u2014 returtemperatur (delta-T)",
+            hp_inlet:    "Tank \u2192 VP (via kolbetank) \u2014 returvann til VP",
+            hp_outlet:   "VP \u2192 tank \u2014 turvann fra VP",
+            tank:        "Buffertank 200 L (VP klemme 15/16)"
+        };
+        var RELAY_NAMES = {
+            heat_pump:        "Varmepumpe (K1)",
+            circulation_pump: "Sirkulasjonspumpe (K2)",
+            spare:            "Ledig (K3)"
+        };
+        var RELAY_CONNECTIONS = {
+            heat_pump:        "VP klemme 17/18 (potensialfri, erstatter fabrikkjumper)",
+            circulation_pump: "Uavhengig styring",
+            spare:            "Reservert (kolber i fremtiden)"
+        };
+
+        function fetchJSON(url) {
+            return fetch(url).then(function (r) { return r.json(); });
+        }
+
+        function kv(rows) {
+            var html = "";
+            for (var i = 0; i < rows.length; i++) {
+                html += "<tr><td>" + rows[i][0] + "</td><td>" + rows[i][1] + "</td></tr>";
+            }
+            return html;
+        }
+
+        function fmtTemp(v) {
+            if (v == null) return '<span class="meta">—</span>';
+            return '<strong style="color:var(--warm)">' + v.toFixed(1) + " °C</strong>";
+        }
+
+        Promise.all([fetchJSON("/api/system"), fetchJSON("/api/status"), fetchJSON("/api/thresholds")])
+        .then(function (res) {
+            var d = res[0];
+            var s = res[1];
+            var th = res[2] || {};
+            var temps = s.sensors || {};
+
+            // Oppdater grenseverdier i teksten
+            if (th.ice_temp_min != null) {
+                document.getElementById("info-ice-range").textContent =
+                    th.ice_temp_min.toFixed(1) + "\u00b0C til +" + th.ice_temp_max.toFixed(1) + "\u00b0C";
+                document.getElementById("info-crit-range").textContent =
+                    th.critical_temp_min.toFixed(1) + "\u00b0C til +" + th.critical_temp_max.toFixed(1) + "\u00b0C";
+            }
+
+            // Footer
+            if (d.network) {
+                var hostEl = document.getElementById("sys-host");
+                var ipEl = document.getElementById("sys-ip");
+                var verEl = document.getElementById("sys-version");
+                if (hostEl) hostEl.textContent = d.network.hostname;
+                if (ipEl) ipEl.textContent = d.network.local_ip;
+                if (verEl) verEl.textContent = "v" + d.version;
+            }
+
+            // System
+            var sysRows = [
+                ["Versjon", "GeoLoop v" + d.version],
+                ["Posisjon", d.location.lat.toFixed(4) + "°N, " + d.location.lon.toFixed(4) + "°E"]
+            ];
+            sysRows.push(["Varmepumpe", "Panasonic WH-MXC12G6E5 (Aquarea G-gen, luft-vann)"]);
+            sysRows.push(["Styringsenhet", "Raspberry Pi 3B+ + RPi Relay Board (3 kanaler)"]);
+            if (d.weather) sysRows.push(["V\u00e6rdata-intervall", d.weather.poll_interval_minutes + " min"]);
+            sysRows.push(["Sensorpolling", "1 min"]);
+            sysRows.push(["Kontrollsyklus", "10 min"]);
+            if (d.network) {
+                sysRows.push(["Hostname", d.network.hostname]);
+                sysRows.push(["Lokal IP", d.network.local_ip + (d.web ? ":" + d.web.port : "")]);
+            }
+            document.getElementById("system-tbl").innerHTML = kv(sysRows);
+
+            // Anlegg
+            var loopRows = [];
+            if (d.ground_loop) {
+                var gl = d.ground_loop;
+                loopRows.push(["Antall sløyfer", gl.loops]);
+                loopRows.push(["Total rørlengde", gl.total_length_m + " m"]);
+                loopRows.push(["Rørdiameter (ytre/indre)", gl.pipe_outer_mm + " / " + (gl.pipe_outer_mm - 2 * gl.pipe_wall_mm) + " mm"]);
+                loopRows.push(["Vannvolum, bakkesløyfe", "~" + gl.volume_liters + " liter"]);
+                loopRows.push(["Legging", "I sand, 5 cm under overflaten, asfalt over"]);
+                loopRows.push(["Dekket areal", "~90 m\u00b2"]);
+                loopRows.push(["R\u00f8rtetthet", "~10 m/m\u00b2"]);
+            }
+            if (d.tank) {
+                loopRows.push(["Buffertank", d.tank.volume_liters + " liter"]);
+            }
+            loopRows.push(["Kolbetank", "10 L (10 kW kolber p\u00e5 VP inngang)"]);
+            loopRows.push(["Internr\u00f8r", "~30 liter"]);
+            var totalVol = (d.ground_loop ? d.ground_loop.volume_liters : 0)
+                         + (d.tank ? d.tank.volume_liters : 0) + 10 + 30;
+            loopRows.push(["Totalt vannvolum", "~" + totalVol + " liter"]);
+            document.getElementById("loop-tbl").innerHTML = loopRows.length
+                ? kv(loopRows)
+                : '<tr><td colspan="2" class="meta">Ikke konfigurert</td></tr>';
+
+            // Sensorer
+            var sHtml = "";
+            if (d.sensors) {
+                for (var key in d.sensors) {
+                    sHtml += "<tr><td>" + (SENSOR_NAMES[key] || key) + "</td>" +
+                             "<td>" + (SENSOR_LOCATIONS[key] || "") + "</td>" +
+                             "<td>" + fmtTemp(temps[key]) + "</td></tr>";
+                }
+            } else {
+                sHtml = '<tr><td colspan="3" class="meta">Ingen sensorer konfigurert</td></tr>';
+            }
+            document.getElementById("sensor-tbody").innerHTML = sHtml;
+
+            // Reléer
+            var rHtml = "";
+            if (d.relays) {
+                for (var key in d.relays) {
+                    var r = d.relays[key];
+                    rHtml += "<tr><td>" + (RELAY_NAMES[key] || key) + "</td>" +
+                             "<td>GPIO " + r.gpio_pin + "</td>" +
+                             "<td>" + (RELAY_CONNECTIONS[key] || (r.active_high ? "HIGH" : "LOW")) + "</td></tr>";
+                }
+            } else {
+                rHtml = '<tr><td colspan="3" class="meta">Ingen rel\u00e9er konfigurert</td></tr>';
+            }
+            document.getElementById("relay-tbody").innerHTML = rHtml;
+
+            // Database
+            var dbRows = [];
+            if (d.database) {
+                dbRows.push(["Sensoravlesninger", d.database.sensor_readings.toLocaleString("nb-NO")]);
+                dbRows.push(["Væravlesninger",    d.database.weather_readings.toLocaleString("nb-NO")]);
+                dbRows.push(["Hendelser",         d.database.events.toLocaleString("nb-NO")]);
+            }
+            document.getElementById("db-tbl").innerHTML = dbRows.length
+                ? kv(dbRows)
+                : '<tr><td colspan="2" class="meta">Ikke tilgjengelig</td></tr>';
+        })
+        .catch(function () {
+            document.getElementById("system-tbl").innerHTML =
+                '<tr><td class="meta">Kunne ikke hente systeminformasjon</td></tr>';
+        });
+    })();
+    </script>
+</body>
+</html>

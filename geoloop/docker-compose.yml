@@ -1,0 +1,88 @@
+# GeoLoop — Cloudflare Tunnel
+# Ingen porter eksponert - all trafikk går via Cloudflare
+#
+# Oppsett:
+# 1. Opprett tunnel i Cloudflare Zero Trust dashboard
+# 2. Kopier tunnel token til .env som CLOUDFLARE_TUNNEL_TOKEN
+# 3. Konfigurer public hostname i Cloudflare: geoloop.tommytv.no -> http://geoloop:8000
+# 4. Opprett config.yaml fra config.example.yaml (sett database.path: /app/data/geoloop.db)
+# 5. docker compose up -d --build
+
+name: geoloop
+
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN:?Sett CLOUDFLARE_TUNNEL_TOKEN i .env}
+    networks:
+      - geoloop-network
+    depends_on:
+      - geoloop
+
+  geoloop:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - HOST_IP=${HOST_IP:-}
+      - HOST_HOSTNAME=${HOST_HOSTNAME:-}
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - geoloop_data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/status')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - geoloop-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
+  watchdog:
+    image: alpine:latest
+    container_name: geoloop-watchdog
+    restart: unless-stopped
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        apk add --no-cache curl > /dev/null 2>&1
+        FAILS=0
+        while true; do
+          if curl -sf --max-time 10 https://uptime.tommytv.no > /dev/null 2>&1; then
+            FAILS=0
+          else
+            FAILS=$$((FAILS + 1))
+            if [ $$FAILS -ge 3 ]; then
+              curl -sf -d "Uptime Kuma (uptime.tommytv.no) er nede! Sjekk hovedserveren." \
+                -H "Title: Hovedserver nede" \
+                -H "Priority: urgent" \
+                -H "Tags: rotating_light" \
+                https://ntfy.sh/$${WATCHDOG_NTFY_TOPIC:-tommytv-uptime}
+              FAILS=0
+              sleep 300
+              continue
+            fi
+          fi
+          sleep 60
+        done
+    environment:
+      WATCHDOG_NTFY_TOPIC: ${WATCHDOG_NTFY_TOPIC:-tommytv-uptime}
+    deploy:
+      resources:
+        limits:
+          memory: 32M
+          cpus: '0.1'
+
+networks:
+  geoloop-network:
+    driver: bridge
+
+volumes:
+  geoloop_data:

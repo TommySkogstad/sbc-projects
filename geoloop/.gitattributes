@@ -1,0 +1,6 @@
+# Krypterte filer (git-crypt)
+.env filter=git-crypt diff=git-crypt
+config.yaml filter=git-crypt diff=git-crypt
+
+# IKKE krypter eksempelfiler
+.env.example !filter !diff

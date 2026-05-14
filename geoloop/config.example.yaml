@@ -1,0 +1,61 @@
+location:
+  lat: 59.2732
+  lon: 10.4810
+
+weather:
+  user_agent: "GeoLoop/0.1 github.com/ditt-brukernavn/geoloop"
+  poll_interval_minutes: 30
+
+database:
+  path: "geoloop.db"  # Docker: bruk "/app/data/geoloop.db"
+
+web:
+  host: "0.0.0.0"
+  port: 8000
+
+# Relékanaler (RPi Relay Board, 3 kanaler)
+# GPIO-pinner avhenger av ditt spesifikke relay board — sjekk databladet
+relays:
+  heat_pump:
+    gpio_pin: 26        # Kanal 1: VP ON/OFF (klemme 17/18)
+    active_high: true    # true = GPIO HIGH lukker reléet
+  circulation_pump:
+    gpio_pin: 20        # Kanal 2: Ekstern sirkulasjonspumpe
+    active_high: true
+  spare:
+    gpio_pin: 21        # Kanal 3: Ledig (kolber i fremtiden)
+    active_high: true
+
+# Temperatursensorer (DS18B20 via 1-Wire på GPIO4)
+# Sensor-ID finnes i /sys/bus/w1/devices/ (f.eks. 28-xxxxxxxxxxxx)
+sensors:
+  loop_inlet:            # T1: Inn til varmesløyfe (bakke)
+    id: "28-xxxxxxxxxxxx"
+  loop_outlet:           # T2: Ut av varmesløyfe (bakke)
+    id: "28-xxxxxxxxxxxx"
+  hp_inlet:              # T3: Inn til varmepumpe
+    id: "28-xxxxxxxxxxxx"
+  hp_outlet:             # T4: Ut av varmepumpe
+    id: "28-xxxxxxxxxxxx"
+  tank:                  # T5: Vanntank
+    id: "28-xxxxxxxxxxxx"
+
+# Bakkeløyfe
+ground_loop:
+  loops: 8               # Antall sløyfer
+  total_length_m: 900    # Total rørlengde i meter
+  pipe_outer_mm: 20      # Ytre diameter i mm
+  pipe_wall_mm: 2        # Veggtykkelse i mm
+  # Beregnet: indre diameter 16 mm, vannvolum ~181 liter
+
+# Buffertank
+tank:
+  volume_liters: 200     # 200 liter buffertank
+  # Tankføler koblet til VP klemme 15/16
+
+# Temperaturgrenser for isrisiko (justerbare via UI, maks ±10°C)
+thresholds:
+  ice_temp_min: -3.0     # Nedre grense for faresone
+  ice_temp_max: 3.0      # Øvre grense for faresone
+  critical_temp_min: -1.0  # Nedre grense for kritisk sone
+  critical_temp_max: 2.0   # Øvre grense for kritisk sone

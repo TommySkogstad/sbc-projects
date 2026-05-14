@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d1b2a">
+    <title>GeoLoop Dashboard</title>
+    <link rel="icon" type="image/svg+xml" href="/static/logo.svg">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css?v=9">
+</head>
+<body>
+    <header>
+        <h1><a href="/" class="header-link"><img src="/static/logo.svg" alt="GeoLoop" class="header-logo">GeoLoop</a></h1>
+        <nav class="nav-links">
+            <a href="/" class="active">Dashboard</a>
+            <a href="/info">System</a>
+        </nav>
+        <span id="last-update" class="meta header-right">Laster...</span>
+    </header>
+
+    <main>
+        <!-- Statuskort -->
+        <section class="card status-card" id="status-card">
+            <h2>Varmesystem</h2>
+            <div class="status-indicator" id="heating-status">
+                <span class="dot"></span>
+                <span class="label">Ukjent</span>
+            </div>
+            <div class="mode-indicator" id="mode-indicator"></div>
+            <div class="controls">
+                <button id="btn-off" class="ctrl-btn" onclick="heatingOff()">AV</button>
+                <button id="btn-auto" class="ctrl-btn" onclick="heatingAuto()">AUTO</button>
+                <button id="btn-on" class="ctrl-btn" onclick="heatingOn()">PÅ</button>
+            </div>
+        </section>
+
+        <!-- Vær -->
+        <section class="card">
+            <h2>Vær nå</h2>
+            <div class="grid weather-grid">
+                <div class="stat">
+                    <span class="stat-value" id="w-temp">--</span>
+                    <span class="stat-label">Temperatur</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="w-precip">--</span>
+                    <span class="stat-label">Nedbør</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="w-humidity">--</span>
+                    <span class="stat-label">Fuktighet</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="w-wind">--</span>
+                    <span class="stat-label">Vind</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sensorer -->
+        <section class="card">
+            <h2>Sensorer</h2>
+            <div class="grid sensor-grid" id="sensor-grid">
+                <p class="meta">Laster sensordata...</p>
+            </div>
+        </section>
+
+        <!-- Sensorhistorikk -->
+        <section class="card">
+            <div class="card-header-row">
+                <h2>Sensorhistorikk</h2>
+                <div class="period-btns" id="period-btns">
+                    <button class="period-btn" data-hours="1">1t</button>
+                    <button class="period-btn" data-hours="6">6t</button>
+                    <button class="period-btn active" data-hours="24">24t</button>
+                    <button class="period-btn" data-hours="168">7d</button>
+                </div>
+            </div>
+            <div class="history-chart-wrap">
+                <canvas id="history-chart"></canvas>
+            </div>
+        </section>
+
+        <!-- Temperaturgrenser -->
+        <section class="card">
+            <h2>Temperaturgrenser</h2>
+            <p class="meta" style="margin-bottom: 0.75rem">
+                <strong>Faresone</strong> definerer temperaturområdet der isdannelse kan oppstå. Når mange timer i prognosen faller innenfor dette området, øker risikoen.
+                <strong>Kritisk sone</strong> er det smalere området rundt 0°C der is er mest sannsynlig — spesielt kombinert med nedbør.
+            </p>
+            <div class="thresholds-grid">
+                <div class="threshold-item">
+                    <label>Faresone min</label>
+                    <div class="threshold-control">
+                        <input type="range" id="th-ice-min" min="-10" max="0" step="0.5" value="-3">
+                        <span id="th-ice-min-val">-3.0°C</span>
+                    </div>
+                </div>
+                <div class="threshold-item">
+                    <label>Faresone maks</label>
+                    <div class="threshold-control">
+                        <input type="range" id="th-ice-max" min="0" max="10" step="0.5" value="3">
+                        <span id="th-ice-max-val">3.0°C</span>
+                    </div>
+                </div>
+                <div class="threshold-item">
+                    <label>Kritisk sone min</label>
+                    <div class="threshold-control">
+                        <input type="range" id="th-crit-min" min="-10" max="0" step="0.5" value="-1">
+                        <span id="th-crit-min-val">-1.0°C</span>
+                    </div>
+                </div>
+                <div class="threshold-item">
+                    <label>Kritisk sone maks</label>
+                    <div class="threshold-control">
+                        <input type="range" id="th-crit-max" min="0" max="10" step="0.5" value="2">
+                        <span id="th-crit-max-val">2.0°C</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Prognose -->
+        <section class="card">
+            <h2>24t prognose</h2>
+            <canvas id="forecast-chart" width="600" height="200"></canvas>
+        </section>
+
+        <!-- Hendelseslogg -->
+        <section class="card">
+            <h2>Hendelseslogg</h2>
+            <div id="event-log" class="event-log">
+                <p class="meta">Laster hendelser...</p>
+            </div>
+        </section>
+        <!-- Systeminformasjon -->
+        <footer class="system-footer" id="system-footer">
+            <span id="sys-host" class="meta"></span>
+            <span id="sys-ip" class="meta"></span>
+            <span id="sys-version" class="meta"></span>
+        </footer>
+    </main>
+
+    <script src="/static/app.js?v=9"></script>
+</body>
+</html>

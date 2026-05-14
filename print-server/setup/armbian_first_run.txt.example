@@ -1,0 +1,16 @@
+# Armbian first-run konfigurasjon — EKSEMPEL
+# Kopier denne til armbian_first_run.txt og fyll ut SSID og passord
+# ADVARSEL: armbian_first_run.txt er i .gitignore (inneholder WiFi-passord i klartekst)
+
+FR_net_change_defaults=1
+FR_net_wifi_enabled=1
+FR_net_wifi_ssid='DittSSID'
+FR_net_wifi_key='DittPassord'
+
+FR_net_use_static=0
+
+FR_general_hostname=printer
+
+# Lim inn din offentlige SSH-nøkkel under:
+# cat ~/.ssh/id_ed25519.pub
+FR_general_ssh_pub_key='ssh-ed25519 AAAA... din@maskin'

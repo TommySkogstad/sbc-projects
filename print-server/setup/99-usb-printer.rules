@@ -1,0 +1,4 @@
+# udev-regel for automatisk printer-detect
+# Implementeres i issue #10
+ACTION=="add", SUBSYSTEM=="usb", ATTR{bInterfaceClass}=="07", \
+    TAG+="systemd", ENV{SYSTEMD_WANTS}="add-printer.service"

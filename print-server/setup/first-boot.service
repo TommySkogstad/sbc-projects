@@ -1,0 +1,13 @@
+[Unit]
+Description=Rock 3C first-boot provisioning
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=!/var/lib/first-boot-done
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/first-boot.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

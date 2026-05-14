@@ -9,8 +9,12 @@ FR_net_wifi_key='DittPassord'
 
 FR_net_use_static=0
 
-FR_general_hostname=printer
+FR_general_hostname=printer-rock
 
 # Lim inn din offentlige SSH-nøkkel under:
 # cat ~/.ssh/id_ed25519.pub
 FR_general_ssh_pub_key='ssh-ed25519 AAAA... din@maskin'
+
+# Root-passord deaktiveres — logg inn kun via SSH-nøkkel
+FR_general_password=''
+FR_general_rootpw_lock=yes

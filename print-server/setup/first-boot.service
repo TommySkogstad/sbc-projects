@@ -1,13 +1,15 @@
 [Unit]
 Description=Rock 3C first-boot provisioning
-After=network-online.target
+After=armbian-firstrun.service network-online.target
 Wants=network-online.target
-ConditionPathExists=!/var/lib/first-boot-done
+ConditionPathExists=!/.first-boot-done
 
 [Service]
 Type=oneshot
 ExecStart=/usr/local/bin/first-boot.sh
 RemainAfterExit=yes
+StandardOutput=append:/var/log/first-boot.log
+StandardError=append:/var/log/first-boot.log
 
 [Install]
 WantedBy=multi-user.target

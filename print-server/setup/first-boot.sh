@@ -93,6 +93,16 @@ if [[ -f /tmp/setup/add-printer.sh ]]; then
     chmod 755 /usr/local/bin/add-printer.sh
 fi
 
+if [[ -f /tmp/setup/render-airprint.sh ]]; then
+    cp /tmp/setup/render-airprint.sh /usr/local/bin/render-airprint.sh
+    chmod 755 /usr/local/bin/render-airprint.sh
+fi
+
+if [[ -f /tmp/setup/airprint.service.tmpl ]]; then
+    mkdir -p /usr/local/share/print-server
+    cp /tmp/setup/airprint.service.tmpl /usr/local/share/print-server/airprint.service.tmpl
+fi
+
 # --------------------------------------------------------------------------
 # WiFi-onboarding (captive portal + AP-fallback)
 # --------------------------------------------------------------------------

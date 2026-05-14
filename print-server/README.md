@@ -66,37 +66,45 @@ systemctl restart cups
 
 CUPS web-UI: `http://printer-rock.local:631`
 
-### Fase 5 — Koble til printeren (10 min)
+### Fase 5 — Auto-USB-printer-detect
 
 1. Koble printer med USB A-til-B-kabelen
-2. Verifiser: `lsusb` og `lpinfo -v`
-3. Legg til printer via CUPS web-UI, autodriver
-4. Test: `echo "hei" | lp -d <printer-name>`
+2. Systemet detekterer USB-printer automatisk via udev-regel `99-usb-printer.rules`
+3. `add-printer.sh` kjøres automatisk:
+   - Venter til CUPS er klar
+   - Registrerer printer med navn `auto-USB-Printer` med IPP Everywhere driver (driverløs)
+   - Oppdaterer Avahi AirPrint-tjeneste via `render-airprint.sh`
+   - Logger til `/var/log/add-printer.log`
 
-### Fase 6 — AirPrint/Mopria-konfigurasjon (5 min)
+Verifiser:
+```bash
+lpstat -p -d
+# eller web-UI: http://printer-rock.local:631/admin/
+```
 
-Filen `/etc/avahi/services/airprint.service` er allerede provisjonert av first-boot.service, men må tilpasses:
+Debug: Hvis printer ikke detekteres, sjekk loggen og at CUPS kjører:
+```bash
+ssh root@printer-rock.local
+tail -f /var/log/add-printer.log
+systemctl status cups
+```
+
+### Fase 6 — Verifisering av AirPrint (2 min)
+
+Filen `/etc/avahi/services/airprint.service` ble automatisk generert og oppdatert av `render-airprint.sh` i Fase 5 basert på detektert printer-navn.
+
+Test fra iOS/Android — printeren skal nå dukke opp automatisk i utskriftsdialogen.
+
+**Valgfritt — tilpass descripton/note:**
+
+Hvis du vil endre printer-beskrivelse (f.eks. lokasjon), rediger `/etc/avahi/services/airprint.service` og restart Avahi:
 
 ```bash
 ssh root@printer-rock.local
 nano /etc/avahi/services/airprint.service
-```
-
-Rediger `PRINTER_NAME`, `PRINTER_DESCRIPTION`, og `note=` basert på CUPS-setup fra fase 5:
-
-```xml
-<txt-record>rp=printers/PRINTER_NAME</txt-record>
-<txt-record>ty=HP LaserJet Pro M404n</txt-record>
-<txt-record>adminurl=http://printer-rock.local:631/printers/PRINTER_NAME</txt-record>
-<txt-record>note=Stuen</txt-record>
-```
-
-Restart Avahi:
-```bash
+# Endre: <txt-record>note=Home</txt-record> osv.
 systemctl restart avahi-daemon
 ```
-
-Test fra iOS/Android — printeren skal dukke opp automatisk i utskriftsdialogen.
 
 ### Fase 7 — Web-UI (valgfritt)
 

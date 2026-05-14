@@ -7,7 +7,7 @@ Samling av hobby-prosjekter på single-board computers (SBC) — Radxa Rock-seri
 | Prosjekt | Hardware | Status | Mappe |
 |---|---|---|---|
 | **GeoLoop** | Raspberry Pi 3B+ | Produksjon — styrer vannbåren bakkevarme | [`geoloop/`](geoloop/) |
-| **Print-server** | Rock 3C 1 GB | Provisioning implementert (flash.sh), venter hardware | [`print-server/`](print-server/) |
+| **Print-server** | Rock 3C 1 GB | Implementasjon — auto-USB-detect, CUPS, AirPrint via Avahi | [`print-server/`](print-server/) |
 | **Spotify-spiller** | Rock 3C 1 GB | Planlagt | [`spotify-spiller/`](spotify-spiller/) |
 
 ## Hardware

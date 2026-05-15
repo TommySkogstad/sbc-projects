@@ -57,8 +57,8 @@ xz -d ~/Downloads/DietPi_Quartz64B-ARMv8-Bookworm.img.xz
 # Flash (bytt ut /dev/sdX med din SD-kortnode, f.eks. /dev/sda)
 sudo dd if=~/Downloads/DietPi_Quartz64B-ARMv8-Bookworm.img bs=4M status=progress oflag=sync of=/dev/sdX
 
-# Monter boot-partisjonen
-sudo mkdir -p /mnt/sdboot && sudo mount /dev/sdX1 /mnt/sdboot
+# Monter DIETPISETUP-partisjonen (partisjon 2, ikke 1 — Quartz64B-layout)
+sudo mkdir -p /mnt/sdboot && sudo mount /dev/sdX2 /mnt/sdboot
 ```
 
 ### Steg 2 — Injiser config (~1 min)
@@ -66,7 +66,7 @@ sudo mkdir -p /mnt/sdboot && sudo mount /dev/sdX1 /mnt/sdboot
 Fra repo-root:
 
 ```bash
-./spotify-spiller/flash.sh /mnt/sdboot
+sudo ./spotify-spiller/flash.sh /mnt/sdboot
 ```
 
 Eller la scriptet auto-detektere SD-kortet (krever at det er montert). Alternativer:

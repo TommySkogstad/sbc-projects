@@ -182,9 +182,9 @@ show_download() {
     echo "  xz -d ${DIETPI_IMAGE_FILE}"
     echo "  sudo dd if=\${HOME}/Downloads/\${DIETPI_IMAGE_FILE%.xz} bs=4M status=progress oflag=sync of=/dev/sdX"
     echo ""
-    echo "Monter boot-partisjonen og kjør config-injeksjon:"
-    echo "  sudo mkdir -p /mnt/sdboot && sudo mount /dev/sdX1 /mnt/sdboot"
-    echo "  ./spotify-spiller/flash.sh /mnt/sdboot"
+    echo "Monter DIETPISETUP-partisjonen (sda2, ikke sda1) og injiser config:"
+    echo "  sudo mkdir -p /mnt/sdboot && sudo mount /dev/sdX2 /mnt/sdboot"
+    echo "  sudo ./spotify-spiller/flash.sh /mnt/sdboot"
     echo ""
 }
 

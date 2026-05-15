@@ -26,12 +26,17 @@ Gjør en gammel USB-printer tilgjengelig som **AirPrint** (iOS) og **Mopria** (A
 ### Fase 1 — Forberedelse på laptop
 
 1. Last ned Armbian Bookworm Minimal for Rock 3C fra https://www.armbian.com/rock-3c/
-2. Last ned [balenaEtcher](https://www.balena.io/etcher/)
-3. Forbered SSH-nøkkel: `ssh-keygen -t ed25519` hvis du ikke har en
+2. Forbered SSH-nøkkel: `ssh-keygen -t ed25519` hvis du ikke har en
+
+> **Ubuntu 24.04+:** `balena-etcher` støttes ikke (mangler `gconf`). Bruk `dd` i stedet.
 
 ### Fase 2 — Flash og laptop-side provisioning (10 min)
 
-1. Flash Armbian til microSD med Etcher
+1. Flash Armbian til microSD med `dd`:
+   ```bash
+   xz -d Armbian_*_Rock-3c_bookworm_*.img.xz
+   sudo dd if=Armbian_*_Rock-3c_bookworm_*.img bs=4M status=progress oflag=sync of=/dev/sdX
+   ```
 2. Kopier `setup/armbian_first_run.txt.example` til `setup/armbian_first_run.txt`
 3. Rediger `setup/armbian_first_run.txt`: sett WiFi-SSID, passord, og lim inn SSH-nøkkelen fra `cat ~/.ssh/id_ed25519.pub`
 4. Mount SD på laptop. Skript auto-detekterer eller spør om partisjon:

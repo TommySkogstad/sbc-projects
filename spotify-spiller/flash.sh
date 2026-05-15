@@ -2,7 +2,9 @@
 # flash.sh — Klargjør et DietPi-flashet SD-kort for Spotify-spiller på Rock 3C
 #
 # Bruk:
-#   ./spotify-spiller/flash.sh [valg] [mount-path]
+#   ./spotify-spiller/flash.sh --install-deps           Installer Etcher + grunnverktøy (Ubuntu/Debian)
+#   ./spotify-spiller/flash.sh --download               Vis nedlastingslenke for DietPi Rock 3C-image
+#   ./spotify-spiller/flash.sh [valg] [mount-path]      Injiser config på flashet SD-kort
 #   ./spotify-spiller/flash.sh --dry-run
 #   ./spotify-spiller/flash.sh --name "Kjøkken"
 #   ./spotify-spiller/flash.sh /media/bruker/boot
@@ -12,7 +14,12 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SETUP_DIR="$SCRIPT_DIR/setup"
 
+DIETPI_IMAGES_URL="https://dietpi.com/downloads/images/"
+
 DRY_RUN=false
+INSTALL_DEPS=false
+SHOW_DOWNLOAD=false
+ASSUME_YES=false
 LIBRESPOT_NAME="Rock"
 MOUNT_PATH=""
 
@@ -26,6 +33,18 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --dry-run)
             DRY_RUN=true
+            shift
+            ;;
+        --install-deps)
+            INSTALL_DEPS=true
+            shift
+            ;;
+        --download)
+            SHOW_DOWNLOAD=true
+            shift
+            ;;
+        --yes|-y)
+            ASSUME_YES=true
             shift
             ;;
         --name)
@@ -42,9 +61,13 @@ while [[ $# -gt 0 ]]; do
             validate_name "$LIBRESPOT_NAME"
             shift
             ;;
+        -h|--help)
+            sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'
+            exit 0
+            ;;
         -*)
             echo "Ukjent flagg: $1" >&2
-            echo "Bruk: $0 [--dry-run] [--name <navn>] [mount-path]" >&2
+            echo "Bruk: $0 [--install-deps|--download|--dry-run] [--name <navn>] [mount-path]" >&2
             exit 1
             ;;
         *)
@@ -62,6 +85,108 @@ log()  { echo "  $*"; }
 ok()   { echo "✓ $*"; }
 fail() { echo "✗ $*" >&2; exit 1; }
 info() { echo "→ $*"; }
+warn() { echo "⚠ $*" >&2; }
+
+# --- Sjekk om vi er på Debian/Ubuntu (apt) ---
+require_apt() {
+    command -v apt-get >/dev/null 2>&1 \
+        || fail "--install-deps krever apt (Debian/Ubuntu). På andre distroer: installer balena-etcher manuelt."
+}
+
+# --- Sudo-wrapper (tom hvis vi allerede er root) ---
+maybe_sudo() {
+    if [[ "$EUID" -eq 0 ]]; then
+        "$@"
+    else
+        command -v sudo >/dev/null 2>&1 || fail "sudo ikke tilgjengelig — kjør som root eller installer sudo"
+        sudo "$@"
+    fi
+}
+
+# --- Installer balena-etcher + grunnverktøy ---
+install_deps() {
+    require_apt
+
+    echo ""
+    echo "╔══════════════════════════════════════════╗"
+    echo "║   Installerer prereqs (Ubuntu/Debian)    ║"
+    echo "╚══════════════════════════════════════════╝"
+    echo ""
+
+    # Grunnpakker fra Ubuntu-repo
+    local apt_pkgs=()
+    command -v xz       >/dev/null 2>&1 || apt_pkgs+=("xz-utils")
+    command -v curl     >/dev/null 2>&1 || apt_pkgs+=("curl")
+    command -v lsblk    >/dev/null 2>&1 || apt_pkgs+=("util-linux")
+
+    if [[ ${#apt_pkgs[@]} -gt 0 ]]; then
+        info "Installerer fra apt: ${apt_pkgs[*]}"
+        maybe_sudo apt-get update -qq
+        maybe_sudo apt-get install -y "${apt_pkgs[@]}"
+        ok "Grunnpakker installert"
+    else
+        ok "Grunnpakker (xz-utils, curl, util-linux) allerede til stede"
+    fi
+
+    # balena-etcher fra Cloudsmith (offisiell repo)
+    if command -v balena-etcher >/dev/null 2>&1 || command -v balena-etcher-electron >/dev/null 2>&1; then
+        ok "balena-etcher allerede installert"
+    else
+        info "Legger til Balena Cloudsmith apt-repo for Etcher..."
+        local setup_url="https://dl.cloudsmith.io/public/balena/etcher/setup.deb.sh"
+
+        if ! $ASSUME_YES; then
+            echo ""
+            echo "Vil legge til ekstern apt-repo: $setup_url"
+            read -r -p "Fortsette? [y/N] " resp
+            [[ "$resp" =~ ^[Yy]$ ]] || { warn "Avbrutt — Etcher ikke installert"; return 0; }
+        fi
+
+        curl -1sLf "$setup_url" | maybe_sudo -E bash
+        maybe_sudo apt-get install -y balena-etcher
+        ok "balena-etcher installert"
+    fi
+
+    echo ""
+    echo "Klar. Neste steg:"
+    echo "  1. Last ned DietPi-image: $0 --download"
+    echo "  2. Flash til SD-kort med Etcher"
+    echo "  3. Kjør $0 for å injisere config på det flashede kortet"
+    echo ""
+}
+
+# --- Skriv ut DietPi-nedlastingsinfo ---
+show_download() {
+    echo ""
+    echo "╔══════════════════════════════════════════╗"
+    echo "║   DietPi-image for Rock 3C               ║"
+    echo "╚══════════════════════════════════════════╝"
+    echo ""
+    echo "Last ned siste Bookworm-image herfra:"
+    echo "  $DIETPI_IMAGES_URL"
+    echo ""
+    echo "Velg 'Radxa ROCK 3C' (RK3566) — filen heter typisk:"
+    echo "  DietPi_ROCK3C-ARMv8-Bookworm.img.xz"
+    echo ""
+    echo "Pakk ut etter nedlasting:"
+    echo "  xz -d DietPi_ROCK3C-ARMv8-Bookworm.img.xz"
+    echo ""
+    echo "URL-en kan endre seg — sjekk DietPi-siden hvis filnavnet er annerledes."
+    echo ""
+}
+
+# --- Preflight: varsle om manglende verktøy uten å feile ---
+preflight() {
+    local has_etcher=false
+    command -v balena-etcher          >/dev/null 2>&1 && has_etcher=true
+    command -v balena-etcher-electron >/dev/null 2>&1 && has_etcher=true
+
+    if ! $has_etcher; then
+        warn "balena-etcher er ikke installert — kjør '$0 --install-deps' hvis du trenger å flashe et nytt SD-kort."
+        warn "(Dette scriptet kan fortsatt injisere config på et SD-kort som allerede er flashet.)"
+        echo ""
+    fi
+}
 
 # --- Auto-detect SD-kortets boot-partisjon ---
 detect_dietpi_mount() {
@@ -117,12 +242,25 @@ copy_file() {
     ok "Kopiert: $dst"
 }
 
+# --- Dispatch på spesialmoduser ---
+if $INSTALL_DEPS; then
+    install_deps
+    exit 0
+fi
+
+if $SHOW_DOWNLOAD; then
+    show_download
+    exit 0
+fi
+
 # --- Finn mount-path ---
 echo ""
 echo "╔══════════════════════════════════════════╗"
 echo "║   Spotify-spiller SD-flash               ║"
 echo "╚══════════════════════════════════════════╝"
 echo ""
+
+preflight
 
 if [[ -n "$MOUNT_PATH" ]]; then
     info "Bruker oppgitt mount-path: $MOUNT_PATH"

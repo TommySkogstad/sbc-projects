@@ -26,13 +26,25 @@ DietPi har raspotify, Snapcast, Squeezelite, Shairport-sync m.fl. som ferdige so
 
 ## Brukerflyt (automatisert SD-bundle)
 
-### Steg 1 — Flash DietPi (~10 min)
+Forutsetter Ubuntu/Debian-laptop. Bytt ut steg 0 hvis du har Etcher og DietPi-imagen allerede.
 
-1. Last ned [DietPi for Rock 3C](https://dietpi.com/downloads/images/) (Bookworm-imagen)
-2. Flash til microSD med Etcher
-3. La SD-kortet bli montert i laptop (auto-mountes som `/media/<bruker>/boot`)
+### Steg 0 — Installer prereqs (~2 min, første gang)
 
-### Steg 2 — Kjør flash.sh (~1 min)
+```bash
+./spotify-spiller/flash.sh --install-deps
+```
+
+Installerer `balena-etcher` (via Cloudsmith apt-repo) + `xz-utils` + `curl`. Idempotent — hopper over pakker som allerede er på plass. Bruk `--yes` for å skippe bekreftelse på Cloudsmith-repoen.
+
+### Steg 1 — Last ned og flash DietPi (~10 min)
+
+```bash
+./spotify-spiller/flash.sh --download
+```
+
+Skriver ut lenke + filnavn for Rock 3C-imagen. Pakk ut med `xz -d`, åpne Etcher og flash til microSD. La SD-kortet bli stående montert i laptopen etterpå (auto-mountes typisk som `/media/<bruker>/boot`).
+
+### Steg 2 — Injiser config (~1 min)
 
 Fra repo-root:
 

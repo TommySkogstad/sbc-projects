@@ -21,8 +21,8 @@ AUTO_SETUP_GLOBAL_PASSWORD=dietpi
 SURVEY_OPTED_IN=0
 
 ### Software-installasjon ###
-# ID 39 = raspotify (Spotify Connect via librespot)
-AUTO_SETUP_INSTALL_SOFTWARE_ID=39
+# ID 167 = Raspotify (Spotify Connect via librespot)
+AUTO_SETUP_INSTALL_SOFTWARE_ID=167
 
 ### Locale/Timezone ###
 AUTO_SETUP_LOCALE=en_GB.UTF-8

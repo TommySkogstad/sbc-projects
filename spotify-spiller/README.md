@@ -7,7 +7,7 @@ Senere: utvides til **synkronisert multirom** via Snapcast hvis flere noder er a
 ## Stack
 
 - **Rock 3C 1 GB** + microSD
-- **DietPi Bookworm** (minimal Debian + software-katalog)
+- **DietPi Bookworm** (Quartz64B-image — DietPi har ikke dedikert ROCK3C-image ennå, men Quartz64B bruker samme RK3566-brikke og er bekreftet kompatibel, se [issue #7057](https://github.com/MichaIng/DietPi/issues/7057))
 - **raspotify** (librespot) — Spotify Connect-endepunkt
 - **ALSA** + innebygd RK3566 AUX
 
@@ -26,15 +26,17 @@ DietPi har raspotify, Snapcast, Squeezelite, Shairport-sync m.fl. som ferdige so
 
 ## Brukerflyt (automatisert SD-bundle)
 
-Forutsetter Ubuntu/Debian-laptop. Bytt ut steg 0 hvis du har Etcher og DietPi-imagen allerede.
+Forutsetter Ubuntu/Debian-laptop.
 
-### Steg 0 — Installer prereqs (~2 min, første gang)
+> **Ubuntu 24.04+:** `balena-etcher` fungerer ikke (mangler `gconf`-avhengigheter). Bruk `dd` som vist under.
+
+### Steg 0 — Installer prereqs (~1 min, første gang)
 
 ```bash
 ./spotify-spiller/flash.sh --install-deps
 ```
 
-Installerer `balena-etcher` (via Cloudsmith apt-repo) + `xz-utils` + `curl`. Idempotent — hopper over pakker som allerede er på plass. Bruk `--yes` for å skippe bekreftelse på Cloudsmith-repoen.
+Installerer `xz-utils` + `curl`. På Ubuntu 24.04+ advares det om at Etcher ikke støttes.
 
 ### Steg 1 — Last ned og flash DietPi (~10 min)
 
@@ -42,17 +44,32 @@ Installerer `balena-etcher` (via Cloudsmith apt-repo) + `xz-utils` + `curl`. Ide
 ./spotify-spiller/flash.sh --download
 ```
 
-Skriver ut lenke + filnavn for Rock 3C-imagen. Pakk ut med `xz -d`, åpne Etcher og flash til microSD. La SD-kortet bli stående montert i laptopen etterpå (auto-mountes typisk som `/media/<bruker>/boot`).
+Skriver ut nedlastingslenke og `dd`-kommando. DietPi har ikke et dedikert ROCK3C-image — scriptet bruker `Quartz64B` (samme RK3566-brikke, bekreftet kompatibel).
+
+```bash
+# Last ned
+curl -L "https://dietpi.com/downloads/images/DietPi_Quartz64B-ARMv8-Bookworm.img.xz" \
+     -o ~/Downloads/DietPi_Quartz64B-ARMv8-Bookworm.img.xz
+
+# Pakk ut
+xz -d ~/Downloads/DietPi_Quartz64B-ARMv8-Bookworm.img.xz
+
+# Flash (bytt ut /dev/sdX med din SD-kortnode, f.eks. /dev/sda)
+sudo dd if=~/Downloads/DietPi_Quartz64B-ARMv8-Bookworm.img bs=4M status=progress oflag=sync of=/dev/sdX
+
+# Monter boot-partisjonen
+sudo mkdir -p /mnt/sdboot && sudo mount /dev/sdX1 /mnt/sdboot
+```
 
 ### Steg 2 — Injiser config (~1 min)
 
 Fra repo-root:
 
 ```bash
-./spotify-spiller/flash.sh
+./spotify-spiller/flash.sh /mnt/sdboot
 ```
 
-Scriptet auto-detekterer det monterte SD-kortet. Alternativer:
+Eller la scriptet auto-detektere SD-kortet (krever at det er montert). Alternativer:
 
 ```bash
 # Oppgi mount-path eksplisitt
@@ -169,14 +186,15 @@ Alle kan kjøre side-om-side på samme Rock 3C så lenge volum og prioritet hån
 
 ## Status
 
-- 2026-05-14: SD-bundle implementert (`flash.sh` + DietPi-automasjon). Klar for hardware-test når Rock 3C ankommer.
+- 2026-05-15: Oppdatert til Quartz64B-image (DietPi mangler ROCK3C). Dokumentert dd-workflow (Etcher virker ikke på Ubuntu 24.04+). Verifisert på ekte hardware.
+- 2026-05-14: SD-bundle implementert (`flash.sh` + DietPi-automasjon).
 
 <details>
 <summary>Alternativ: manuelt oppsett (uten flash.sh)</summary>
 
 ### Fase 1 — Flash DietPi
 
-1. Flash vanilla DietPi Bookworm for Rock 3C med Etcher
+1. Flash `DietPi_Quartz64B-ARMv8-Bookworm.img` med `dd` (se steg 1 over)
 2. Mount SD, sett `dietpi.txt` manuelt (se `setup/dietpi.txt` for eksempel)
 
 ### Fase 2 — Førstegangsoppsett

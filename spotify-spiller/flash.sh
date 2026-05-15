@@ -15,6 +15,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SETUP_DIR="$SCRIPT_DIR/setup"
 
 DIETPI_IMAGES_URL="https://dietpi.com/downloads/images/"
+# DietPi har ikke et dedikert ROCK3C-image. Quartz64B (RK3566) er bekreftet kompatibel
+# (dietpi/DietPi#7057). Brukes inntil et offisielt ROCK3C-image er tilgjengelig.
+DIETPI_IMAGE_FILE="DietPi_Quartz64B-ARMv8-Bookworm.img.xz"
 
 DRY_RUN=false
 INSTALL_DEPS=false
@@ -129,7 +132,14 @@ install_deps() {
     fi
 
     # balena-etcher fra Cloudsmith (offisiell repo)
-    if command -v balena-etcher >/dev/null 2>&1 || command -v balena-etcher-electron >/dev/null 2>&1; then
+    # NB: Etcher avhenger av gconf-pakker som ikke lenger er tilgjengelig på Ubuntu 24.04+.
+    # Bruk dd i stedet (se --download for instruksjoner).
+    local ubuntu_version
+    ubuntu_version=$(lsb_release -rs 2>/dev/null || echo "0")
+    if [[ $(echo "$ubuntu_version >= 24.04" | bc -l 2>/dev/null) -eq 1 ]]; then
+        warn "Ubuntu ${ubuntu_version}: balena-etcher støttes ikke (mangler gconf). Bruk dd i stedet."
+        warn "Se: $0 --download"
+    elif command -v balena-etcher >/dev/null 2>&1 || command -v balena-etcher-electron >/dev/null 2>&1; then
         ok "balena-etcher allerede installert"
     else
         info "Legger til Balena Cloudsmith apt-repo for Etcher..."
@@ -150,8 +160,8 @@ install_deps() {
     echo ""
     echo "Klar. Neste steg:"
     echo "  1. Last ned DietPi-image: $0 --download"
-    echo "  2. Flash til SD-kort med Etcher"
-    echo "  3. Kjør $0 for å injisere config på det flashede kortet"
+    echo "  2. Flash til SD-kort (dd anbefalt, se --download)"
+    echo "  3. Kjør $0 /mnt/sdboot for å injisere config"
     echo ""
 }
 
@@ -162,16 +172,19 @@ show_download() {
     echo "║   DietPi-image for Rock 3C               ║"
     echo "╚══════════════════════════════════════════╝"
     echo ""
-    echo "Last ned siste Bookworm-image herfra:"
-    echo "  $DIETPI_IMAGES_URL"
+    echo "DietPi har ikke et dedikert ROCK3C-image, men Quartz64B (samme RK3566-brikke)"
+    echo "er bekreftet kompatibel (github.com/MichaIng/DietPi/issues/7057)."
     echo ""
-    echo "Velg 'Radxa ROCK 3C' (RK3566) — filen heter typisk:"
-    echo "  DietPi_ROCK3C-ARMv8-Bookworm.img.xz"
+    echo "Last ned Quartz64B Bookworm-image:"
+    echo "  ${DIETPI_IMAGES_URL}${DIETPI_IMAGE_FILE}"
     echo ""
-    echo "Pakk ut etter nedlasting:"
-    echo "  xz -d DietPi_ROCK3C-ARMv8-Bookworm.img.xz"
+    echo "Pakk ut og flash med dd (Etcher støttes ikke på Ubuntu 24.04):"
+    echo "  xz -d ${DIETPI_IMAGE_FILE}"
+    echo "  sudo dd if=\${HOME}/Downloads/\${DIETPI_IMAGE_FILE%.xz} bs=4M status=progress oflag=sync of=/dev/sdX"
     echo ""
-    echo "URL-en kan endre seg — sjekk DietPi-siden hvis filnavnet er annerledes."
+    echo "Monter boot-partisjonen og kjør config-injeksjon:"
+    echo "  sudo mkdir -p /mnt/sdboot && sudo mount /dev/sdX1 /mnt/sdboot"
+    echo "  ./spotify-spiller/flash.sh /mnt/sdboot"
     echo ""
 }
 

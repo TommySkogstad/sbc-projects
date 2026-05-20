@@ -1,0 +1,25 @@
+[Unit]
+Description=Print-server web-UI (FastAPI + uvicorn)
+After=cups.service
+Requires=cups.service
+
+[Service]
+Type=simple
+User=printer-web
+Group=lp
+WorkingDirectory=/opt/printer-web
+ExecStart=/opt/printer-web/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8080
+Restart=on-failure
+RestartSec=5
+StandardOutput=append:/var/log/printer-web.log
+StandardError=append:/var/log/printer-web.log
+
+# Sikkerhet — kjør med begrensede rettigheter
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log /tmp
+
+[Install]
+WantedBy=multi-user.target

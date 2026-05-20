@@ -1,0 +1,17 @@
+Canon UFRII Printer Driver for Linux — Lisens
+
+Driveren `cnrdrvcups-ufr2-uk_6.20-1.20_arm64.deb` distribueres av Canon Inc.
+under deres egen sluttbrukerlisens. Driveren er fritt nedlastbar fra Canon
+support-sider og kan distribueres som del av løsninger som muliggjør bruk
+av Canon-printere på Linux.
+
+Driveren er IKKE open source. Kildekode er ikke distribuert.
+
+Original-URL (Canons CDN):
+http://gdlp01.c-wss.com/gds/8/0100007658/47/linux-UFRII-drv-v620-m17n-20.tar.gz
+
+Maintainer: CANON INC. <sup-debian@mail.canon>
+
+Hvis Canon ber om at driveren ikke distribueres på denne måten, kontakt
+Tommy Skogstad <tommyskogstad@gmail.com> for å fjerne fila fra repoet.
+Brukere kan da fortsatt laste driveren manuelt fra Canon-sidene.

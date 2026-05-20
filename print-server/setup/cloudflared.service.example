@@ -1,0 +1,47 @@
+[Unit]
+Description=Cloudflare Tunnel for print-server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+ExecStart=/usr/local/bin/cloudflared tunnel --no-autoupdate run --token REPLACE_WITH_TUNNEL_TOKEN
+Restart=on-failure
+RestartSec=10
+User=cloudflared
+Group=cloudflared
+
+[Install]
+WantedBy=multi-user.target
+
+# Bruk:
+#
+# 1. Installer cloudflared som arm64-binær (ikke apt, ikke Docker):
+#    curl -L -o /tmp/cloudflared.deb \
+#      https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64.deb
+#    sudo dpkg -i /tmp/cloudflared.deb
+#
+# 2. Opprett tunnel og DNS-record i Cloudflare dashboard:
+#    - Tunnel: gi den et navn som "print-<navn>"
+#    - Public hostname: <navn>-print.tommytv.no → http://localhost:8080
+#    - Hent ut tunnel-token
+#
+# 3. AKTIVER CLOUDFLARE ACCESS FØR TUNNELEN STARTES:
+#    - Cloudflare Zero Trust → Access → Applications → Add application
+#    - Type: Self-hosted, Application domain: <navn>-print.tommytv.no
+#    - Policy: Email allowlist (legg til tommyskogstad@gmail.com og evt. andre)
+#    - Uten Access er printeren ÅPEN for hele internett.
+#
+# 4. Kopier denne fila til /etc/systemd/system/cloudflared.service og erstatt
+#    REPLACE_WITH_TUNNEL_TOKEN med faktisk token.
+#
+# 5. Opprett cloudflared-bruker (ingen shell, ingen hjemmemappe):
+#    sudo useradd --system --no-create-home --shell /usr/sbin/nologin cloudflared
+#
+# 6. Start og enable:
+#    sudo systemctl daemon-reload
+#    sudo systemctl enable --now cloudflared
+#
+# 7. Verifiser:
+#    systemctl status cloudflared
+#    journalctl -u cloudflared -f

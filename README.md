@@ -9,6 +9,7 @@ Samling av hobby-prosjekter på single-board computers (SBC) — Radxa Rock-seri
 | **GeoLoop** | Raspberry Pi 3B+ | Produksjon — styrer vannbåren bakkevarme | [`geoloop/`](geoloop/) |
 | **Print-server** | Rock 3C 1 GB | Implementasjon — auto-USB-detect, CUPS, AirPrint via Avahi | [`print-server/`](print-server/) |
 | **Spotify-spiller** | Rock 3C 1 GB | SD-bundle implementert — flash.sh-automasjon + DietPi | [`spotify-spiller/`](spotify-spiller/) |
+| **Radioamatør-pi** | Raspberry Pi 4 4 GB | Byggeplan — companion-Pi til eksisterende rigg (FT8, APRS, Winlink, CAT) | [`radioamator-pi/`](radioamator-pi/) |
 
 ## Hardware
 
@@ -43,6 +44,7 @@ I bruk i GeoLoop med Open-Smart GPIO Expansion + RPi Relay Board for VP-styring 
 | Lett enkeltformål (print-server) | Armbian Bookworm Minimal |
 | Audio-stack (Spotify, Snapcast, AirPlay) | DietPi Bookworm |
 | Industrial/IoT (GeoLoop) | Raspberry Pi OS Lite |
+| Hamradio (FT8, APRS, Winlink) | Raspberry Pi OS Bookworm 64-bit Lite |
 | Docker-hub (SHS, Frigate) | Armbian Bookworm + Docker |
 
 ## Hemmeligheter

@@ -63,11 +63,23 @@ def _check_rate_limit(ip: str) -> bool:
     return len(_login_attempts[ip]) >= _RATE_LIMIT_MAX
 
 
+def _const_eq(a: str | None, b: str | None) -> bool:
+    """Konstant-tid streng-sammenligning, robust mot None og ikke-ASCII.
+
+    `secrets.compare_digest` på `str` kaster `TypeError` ved ikke-ASCII-tegn
+    og krever like typer; vi encoder derfor til bytes med `surrogateescape`
+    slik at brukerstyrt input aldri kan trigge en 500/DoS.
+    """
+    a_b = (a or "").encode("utf-8", "surrogateescape")
+    b_b = (b or "").encode("utf-8", "surrogateescape")
+    return secrets.compare_digest(a_b, b_b)
+
+
 def _verify_csrf(request: Request) -> bool:
     """Verifiser CSRF-token fra header mot cookie."""
     cookie_token = request.cookies.get(_CSRF_COOKIE, "")
     header_token = request.headers.get(_CSRF_HEADER, "")
-    return bool(cookie_token and cookie_token == header_token)
+    return bool(cookie_token) and _const_eq(cookie_token, header_token)
 
 
 @app.middleware("http")
@@ -86,7 +98,7 @@ async def auth_middleware(request: Request, call_next):
         return await call_next(request)
 
     token = request.cookies.get(_AUTH_COOKIE)
-    if token != _AUTH_TOKEN:
+    if not _const_eq(token, _AUTH_TOKEN):
         if path.startswith("/api/"):
             return JSONResponse({"error": "Ikke autentisert"}, status_code=401)
         return RedirectResponse("/login")
@@ -165,7 +177,16 @@ async def login(request: Request):
     _login_attempts[ip].append(time.monotonic())
 
     body = await request.json()
-    if body.get("password") == _PASSWORD:
+    # Hash innsendt passord og sammenlign konstant-tid mot _AUTH_TOKEN
+    # (SHA256-hex). Begge operander blir da fast-lengde ASCII-hex, og vi
+    # unngår både timing-lekkasje og type-/encoding-feil fra rå JSON.
+    supplied = body.get("password")
+    supplied_hash = (
+        hashlib.sha256(supplied.encode("utf-8", "surrogateescape")).hexdigest()
+        if isinstance(supplied, str)
+        else ""
+    )
+    if _AUTH_TOKEN and _const_eq(supplied_hash, _AUTH_TOKEN):
         csrf_token = secrets.token_hex(32)
         response = JSONResponse({"ok": True, "csrf_token": csrf_token})
         response.set_cookie(

@@ -213,9 +213,9 @@ docker exec ntfy ntfy access geoloop 'geoloop-*' rw
 | Lag | Tiltak |
 |-----|--------|
 | Nettverk | Cloudflare Tunnel — ingen åpne porter, all trafikk via Cloudflare |
-| Autentisering | Passord med SHA-256 hash, HttpOnly cookie, SameSite=strict |
+| Autentisering | Passord hashet SHA-256 før sammenligning; constant-time compare for å forhindre timing-angrep; robust mot non-ASCII input |
 | Rate limiting | Maks 5 innloggingsforsøk per IP per 5 minutter (429-respons) |
-| CSRF | Cookie + header-token på alle muterende endepunkter |
+| CSRF | Cookie + header-token på alle muterende endepunkter; constant-time sammenligning |
 | XSS | Ingen innerHTML — all dynamisk rendering via DOM API |
 | Hemmeligheter | `.env` og `config.yaml` kryptert med git-crypt (GPG) |
 | Container | Non-root bruker i Docker, minnegrenser (256 MB) |

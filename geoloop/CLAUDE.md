@@ -23,9 +23,9 @@
 
 ## Sikkerhet
 - `.env` og `config.yaml` er kryptert med git-crypt (GPG-nøkkel `CA1E...8B`)
-- Auth: SHA-256 passord-hash, HttpOnly cookie, SameSite=strict
+- Auth: Passord hashet SHA-256 før sammenligning; constant-time `secrets.compare_digest()` for å forhindre timing-angrep; robust mot non-ASCII input
 - Rate limiting: 5 login-forsøk per IP per 5 min
-- CSRF: Cookie + `x-csrf-token` header på alle POST-endepunkter
+- CSRF: Cookie + `x-csrf-token` header på alle POST-endepunkter; constant-time sammenligning
 - Docker: Non-root bruker (`geoloop`), minnegrenser (256 MB)
 - Frontend: Ingen innerHTML — all dynamisk rendering via DOM API (XSS-safe)
 - Cloudflare Tunnel: Ingen åpne porter

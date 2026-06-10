@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import hashlib
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
 
+import geoloop.web.app as appmod
 from geoloop.controller.stub import StubController
 from geoloop.db.store import Store
 from geoloop.sensors.stub import StubSensor
@@ -106,3 +108,80 @@ class TestLogEndpoint:
         assert "weather" in data
         assert "sensors" in data
         assert "events" in data
+
+
+_TEST_PW = "hemmelig-passord-123"
+_TEST_HASH = hashlib.sha256(_TEST_PW.encode()).hexdigest()
+
+
+@pytest.fixture
+def auth_client(monkeypatch):
+    """Klient med auth-middleware AKTIVERT.
+
+    `_PASSWORD`/`_AUTH_TOKEN` leses ved import-tid, så env-variabler hjelper
+    ikke — vi må patche modul-globalene direkte.
+    """
+    store = Store(":memory:")
+    met_client = MetClient("test/1.0")
+    controller = StubController()
+    configure(
+        met_client=met_client,
+        store=store,
+        lat=59.91,
+        lon=10.75,
+        sensors={"tank": StubSensor("tank", 40.0)},
+        controller=controller,
+    )
+
+    monkeypatch.setattr(appmod, "_PASSWORD", _TEST_PW)
+    monkeypatch.setattr(appmod, "_AUTH_TOKEN", _TEST_HASH)
+    # `_login_attempts` er en delt modul-global — nullstill mellom tester.
+    appmod._login_attempts.clear()
+
+    with patch.object(met_client, "fetch_forecast", new_callable=AsyncMock, return_value=_sample_forecast()):
+        yield TestClient(app, raise_server_exceptions=False)
+
+
+class TestAuthAndCsrf:
+    def test_post_without_auth_returns_401(self, auth_client):
+        resp = auth_client.post("/api/heating/on")
+        assert resp.status_code == 401
+
+    def test_login_wrong_password_returns_401(self, auth_client):
+        resp = auth_client.post("/api/login", json={"password": "feil"})
+        assert resp.status_code == 401
+
+    def test_login_correct_password_sets_cookies(self, auth_client):
+        resp = auth_client.post("/api/login", json={"password": _TEST_PW})
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["ok"] is True
+        assert "csrf_token" in body
+        assert appmod._AUTH_COOKIE in resp.cookies
+        assert appmod._CSRF_COOKIE in resp.cookies
+
+    def test_post_with_auth_but_no_csrf_returns_403(self, auth_client):
+        login = auth_client.post("/api/login", json={"password": _TEST_PW})
+        assert login.status_code == 200
+        # Auth-cookie beholdes av TestClient, men ingen x-csrf-token sendes.
+        resp = auth_client.post("/api/heating/on")
+        assert resp.status_code == 403
+
+    def test_post_with_valid_csrf_succeeds(self, auth_client):
+        login = auth_client.post("/api/login", json={"password": _TEST_PW})
+        csrf = login.json()["csrf_token"]
+        resp = auth_client.post("/api/heating/on", headers={appmod._CSRF_HEADER: csrf})
+        assert resp.status_code == 200
+        assert resp.json()["heating"]["on"] is True
+
+    def test_non_string_password_does_not_crash(self, auth_client):
+        # JSON kan sende ikke-str; skal gi 401, ikke 500
+        # (en naiv compare_digest uten type-guard ville kastet → 500).
+        resp = auth_client.post("/api/login", json={"password": 12345})
+        assert resp.status_code == 401
+
+    def test_non_ascii_password_does_not_crash(self, auth_client):
+        # Ikke-ASCII passord skal gi 401, ikke 500
+        # (compare_digest på ikke-ASCII str kaster TypeError → 500 uten normalisering).
+        resp = auth_client.post("/api/login", json={"password": "feil-æøå-pæssord"})
+        assert resp.status_code == 401

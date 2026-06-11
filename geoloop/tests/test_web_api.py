@@ -109,6 +109,14 @@ class TestLogEndpoint:
         assert "sensors" in data
         assert "events" in data
 
+    def test_limit_above_max_returns_422(self, client):
+        resp = client.get("/api/log?limit=999999")
+        assert resp.status_code == 422
+
+    def test_limit_zero_returns_422(self, client):
+        resp = client.get("/api/log?limit=0")
+        assert resp.status_code == 422
+
 
 _TEST_PW = "hemmelig-passord-123"
 _TEST_HASH = hashlib.sha256(_TEST_PW.encode()).hexdigest()

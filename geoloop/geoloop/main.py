@@ -2,18 +2,18 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 import uvicorn
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
+from geoloop import notify
 from geoloop.config import load_config
 from geoloop.controller.stub import StubController
 from geoloop.db.store import Store
 from geoloop.engine.ice_risk import evaluate
 from geoloop.engine.models import HeatingDecision, IceRiskLevel, SensorReadings
-from geoloop import notify
 from geoloop.sensors.stub import StubSensor
 from geoloop.weather.met_client import MetClient
 from geoloop.web.app import app, configure, get_manual_override, get_thresholds
@@ -50,7 +50,11 @@ def _create_sensors(cfg: AppConfig) -> dict[str, TemperatureSensor]:
         for name, sensor_cfg in cfg.sensors.items():
             if "xxx" in sensor_cfg.id:
                 sensors[name] = StubSensor(name, _stub_values.get(name, 20.0))
-                logger.info("Sensor %s: plassholder-ID — bruker stub (%.1f°C)", name, _stub_values.get(name, 20.0))
+                logger.info(
+                    "Sensor %s: plassholder-ID — bruker stub (%.1f°C)",
+                    name,
+                    _stub_values.get(name, 20.0),
+                )
             else:
                 sensors[name] = DS18B20Sensor(sensor_cfg.id)
         logger.info("DS18B20-sensorer opprettet: %s", list(sensors.keys()))
@@ -111,7 +115,7 @@ async def _sensor_poll(
 ) -> None:
     """Les alle sensorer og logg til database (kjøres hvert minutt)."""
     try:
-        cycle_ts = datetime.now(timezone.utc)
+        cycle_ts = datetime.now(UTC)
         for name, sensor in sensors.items():
             value = await sensor.read()
             if value is not None:

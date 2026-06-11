@@ -442,7 +442,10 @@ async def set_thresholds_api(request: Request) -> dict:
 
 
 @app.get("/api/history")
-async def history(hours: int = 24, limit: int = 0) -> dict:
+async def history(
+    hours: int = Query(default=24, ge=1, le=720),
+    limit: int = Query(default=0, ge=0, le=5000),
+) -> dict:
     """Sensorhistorikk og VP-perioder for tidsserie-graf."""
     if not _store:
         return {"error": "Database ikke konfigurert"}

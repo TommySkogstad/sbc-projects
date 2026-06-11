@@ -260,3 +260,15 @@ class TestHistoryEndpoint:
         event_types = [p["event_type"] for p in periods]
         assert "manual_on" in event_types
         assert "manual_off" in event_types
+
+    def test_should_reject_hours_above_max(self, client):
+        resp = client.get("/api/history?hours=999999")
+        assert resp.status_code == 422
+
+    def test_should_reject_hours_zero(self, client):
+        resp = client.get("/api/history?hours=0")
+        assert resp.status_code == 422
+
+    def test_should_reject_limit_above_max(self, client):
+        resp = client.get("/api/history?limit=9999")
+        assert resp.status_code == 422

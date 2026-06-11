@@ -18,7 +18,8 @@ fi
 
 echo "==> Installerer avhengigheter"
 "$VENV_DIR/bin/pip" install --upgrade pip
-"$VENV_DIR/bin/pip" install -e "$APP_DIR"
+"$VENV_DIR/bin/pip" install -r "$APP_DIR/requirements.lock"
+"$VENV_DIR/bin/pip" install --no-deps -e "$APP_DIR"
 
 # Kopier eksempelkonfig hvis config.yaml ikke finnes
 if [ ! -f "$APP_DIR/config.yaml" ]; then

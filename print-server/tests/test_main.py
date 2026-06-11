@@ -15,9 +15,11 @@ def test_no_utcnow_in_main():
 
 def test_timestamp_is_iso8601_utc_with_z_suffix():
     """Timestamp-format skal være ISO-8601 UTC med Z-suffiks (f.eks. 2024-01-15T10:30:00Z)."""
-    from datetime import datetime, timezone
+    import sys
+    sys.path.insert(0, str(MAIN_PY.parent))
+    from main import _iso_utc_now  # noqa: PLC0415
 
-    ts = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+    ts = _iso_utc_now()
     assert re.match(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$", ts), (
         f"Timestamp {ts!r} matcher ikke forventet ISO-8601 UTC Z-format"
     )

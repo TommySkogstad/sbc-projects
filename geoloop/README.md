@@ -220,7 +220,7 @@ docker exec ntfy ntfy access geoloop 'geoloop-*' rw
 | Hemmeligheter | `.env` og `config.yaml` kryptert med git-crypt (GPG) |
 | Container | Non-root bruker i Docker, minnegrenser (256 MB) |
 | Varsling | ntfy push-varsler ved alle tilstandsendringer |
-| CI/CD | GitHub Actions: pytest + Docker build på push/PR |
+| CI/CD | GitHub Actions: pytest, ruff, mypy + Docker build på push/PR |
 
 ### git-crypt
 
@@ -273,7 +273,9 @@ git-crypt status -e
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -e ".[dev]"
-.venv/bin/pytest
+.venv/bin/pytest          # Kjør tester
+.venv/bin/ruff check .    # Lint
+.venv/bin/mypy geoloop/   # Type-check
 ```
 
 ## Produksjonsdeploy

@@ -43,5 +43,5 @@
 
 ## CI/CD
 - GitHub Actions: `.github/workflows/ci.yml`
-- Jobber: pytest + Docker build
+- Jobber: pytest, ruff, mypy + Docker build
 - Kjører på push til main og PR

@@ -55,7 +55,7 @@ def _classify_risk(
             if precip is not None and precip > 0:
                 precip_near_zero_hours += 1
 
-    details = {
+    details: dict[str, object] = {
         "ice_zone_hours": ice_zone_hours,
         "critical_hours": critical_hours,
         "precip_near_zero_hours": precip_near_zero_hours,

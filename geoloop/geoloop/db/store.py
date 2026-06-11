@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 
@@ -57,7 +57,10 @@ class Store:
         if "compacted" not in columns:
             cur.execute("ALTER TABLE sensor_log ADD COLUMN compacted INTEGER DEFAULT 0")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_sensor_log_ts ON sensor_log (timestamp)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_sensor_log_compacted ON sensor_log (compacted, timestamp)")
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_sensor_log_compacted "
+                "ON sensor_log (compacted, timestamp)"
+            )
             self._conn.commit()
 
     def log_weather(
@@ -69,7 +72,7 @@ class Store:
         wind_speed: float | None = None,
         timestamp: datetime | None = None,
     ) -> None:
-        ts = (timestamp or datetime.now(timezone.utc)).isoformat()
+        ts = (timestamp or datetime.now(UTC)).isoformat()
         self._conn.execute(
             "INSERT INTO weather_log (timestamp, temperature, precipitation, humidity, wind_speed) "
             "VALUES (?, ?, ?, ?, ?)",
@@ -84,7 +87,7 @@ class Store:
         *,
         timestamp: datetime | None = None,
     ) -> None:
-        ts = (timestamp or datetime.now(timezone.utc)).isoformat()
+        ts = (timestamp or datetime.now(UTC)).isoformat()
         self._conn.execute(
             "INSERT INTO sensor_log (timestamp, sensor_id, value) VALUES (?, ?, ?)",
             (ts, sensor_id, value),
@@ -98,7 +101,7 @@ class Store:
         *,
         timestamp: datetime | None = None,
     ) -> None:
-        ts = (timestamp or datetime.now(timezone.utc)).isoformat()
+        ts = (timestamp or datetime.now(UTC)).isoformat()
         self._conn.execute(
             "INSERT INTO system_events (timestamp, event_type, message) VALUES (?, ?, ?)",
             (ts, event_type, message),
@@ -114,7 +117,7 @@ class Store:
           24t–7d: 30-min snitt    (compacted=2)
           >7d:    slett
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         cur = self._conn.cursor()
 
         # Slett data eldre enn 7 dager
@@ -142,7 +145,8 @@ class Store:
         """Komprimer rå-data i et tidsvindu til gjennomsnittsverdier per bøtte."""
         bucket_expr = (
             "strftime('%Y-%m-%dT%H:', timestamp) || "
-            f"printf('%02d', (CAST(strftime('%M', timestamp) AS INTEGER) / {bucket_minutes}) * {bucket_minutes})"
+            f"printf('%02d', (CAST(strftime('%M', timestamp) AS INTEGER) "
+            f"/ {bucket_minutes}) * {bucket_minutes})"
         )
 
         # Sett inn gjennomsnitt per bøtte
@@ -201,7 +205,7 @@ class Store:
         tidsbøtte-gruppering for nedsampling.
         """
         since = (
-            datetime.now(timezone.utc)
+            datetime.now(UTC)
             - timedelta(hours=hours)
         ).isoformat()
 
@@ -256,7 +260,7 @@ class Store:
     def get_heating_periods(self, hours: int = 24) -> list[dict]:
         """Hent VP av/på-hendelser for de siste N timer."""
         since = (
-            datetime.now(timezone.utc)
+            datetime.now(UTC)
             - timedelta(hours=hours)
         ).isoformat()
         rows = self._conn.execute(

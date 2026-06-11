@@ -150,7 +150,7 @@ GeoLoop/
 | `GET /api/sensors` | Les alle temperatursensorer |
 | `GET /api/system` | Systeminformasjon og konfigurasjon |
 | `GET /api/history?hours=24` | Sensorhistorikk og VP-perioder |
-| `GET /api/log?limit=50` | Historikk fra databasen |
+| `GET /api/log?limit=50` | Historikk fra databasen (limit: 1–500) |
 | `GET /api/thresholds` | Gjeldende temperaturgrenser |
 | `POST /api/thresholds` | Oppdater temperaturgrenser (CSRF-beskyttet) |
 | `POST /api/heating/on` | Manuell overstyring: varme PÅ (CSRF-beskyttet) |

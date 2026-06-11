@@ -25,7 +25,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install dependencies
-        run: pip install -e ".[dev]"
+        run: pip install -r requirements-dev.lock && pip install --no-deps -e .
       - name: Run tests
         run: pytest tests/ -v
 
@@ -36,3 +36,5 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build Docker image
         run: docker build -t geoloop:test .
+      - name: Smoke test imports
+        run: docker run --rm geoloop:test python -c "import geoloop.main"

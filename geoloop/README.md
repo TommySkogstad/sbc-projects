@@ -149,7 +149,7 @@ GeoLoop/
 | `GET /api/weather` | Siste værdata + 24-timers prognose |
 | `GET /api/sensors` | Les alle temperatursensorer |
 | `GET /api/system` | Systeminformasjon og konfigurasjon |
-| `GET /api/history?hours=24` | Sensorhistorikk og VP-perioder |
+| `GET /api/history?hours=24` | Sensorhistorikk og VP-perioder (hours: 1–720, limit: 0–5000) |
 | `GET /api/log?limit=50` | Historikk fra databasen (limit: 1–500) |
 | `GET /api/thresholds` | Gjeldende temperaturgrenser |
 | `POST /api/thresholds` | Oppdater temperaturgrenser (CSRF-beskyttet) |

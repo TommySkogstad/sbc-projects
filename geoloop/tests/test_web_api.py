@@ -185,3 +185,70 @@ class TestAuthAndCsrf:
         # (compare_digest på ikke-ASCII str kaster TypeError → 500 uten normalisering).
         resp = auth_client.post("/api/login", json={"password": "feil-æøå-pæssord"})
         assert resp.status_code == 401
+
+
+class TestSystemEndpoint:
+    def test_should_return_database_stats(self, client):
+        """Database-statistikk fra /api/system skal telle faktiske rader."""
+        store = appmod._store
+        store.log_sensor("loop_inlet", 20.0)
+        store.log_sensor("loop_inlet", 21.0)
+        store.log_weather(temperature=5.0)
+        store.log_event("test_event", "msg")
+
+        resp = client.get("/api/system")
+        assert resp.status_code == 200
+        data = resp.json()
+        db = data["database"]
+        assert db["sensor_readings"] == 2
+        assert db["weather_readings"] == 1
+        assert db["events"] == 1
+
+    def test_should_return_zero_counts_for_empty_store(self, client):
+        resp = client.get("/api/system")
+        assert resp.status_code == 200
+        data = resp.json()
+        db = data["database"]
+        assert db["sensor_readings"] == 0
+        assert db["weather_readings"] == 0
+        assert db["events"] == 0
+
+    def test_should_return_version_and_location(self, client):
+        resp = client.get("/api/system")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["version"] == "0.1.0"
+        assert data["location"]["lat"] == pytest.approx(59.91)
+        assert data["location"]["lon"] == pytest.approx(10.75)
+
+
+class TestHistoryEndpoint:
+    def test_should_return_sensor_history(self, client):
+        store = appmod._store
+        store.log_sensor("loop_inlet", 22.5)
+        store.log_sensor("tank", 41.0)
+
+        resp = client.get("/api/history")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "sensors" in data
+        assert "heating_periods" in data
+        assert "heating_on" in data
+
+    def test_should_return_empty_when_no_data(self, client):
+        resp = client.get("/api/history")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["sensors"] == []
+        assert data["heating_periods"] == []
+
+    def test_should_include_heating_periods_after_events(self, client):
+        client.post("/api/heating/on")
+        client.post("/api/heating/off")
+
+        resp = client.get("/api/history")
+        assert resp.status_code == 200
+        periods = resp.json()["heating_periods"]
+        event_types = [p["event_type"] for p in periods]
+        assert "manual_on" in event_types
+        assert "manual_off" in event_types

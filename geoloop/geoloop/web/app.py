@@ -39,9 +39,6 @@ _login_attempts: dict[str, list[float]] = defaultdict(list)
 _RATE_LIMIT_MAX = 5
 _RATE_LIMIT_WINDOW = 300  # sekunder
 
-# CSRF tokens per session
-_csrf_tokens: dict[str, str] = {}
-
 app = FastAPI(title="GeoLoop", version="0.1.0")
 app.mount("/static", StaticFiles(directory=_STATIC_DIR), name="static")
 

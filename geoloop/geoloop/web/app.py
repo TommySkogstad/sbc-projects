@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from fastapi import FastAPI, Request
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -262,12 +263,15 @@ async def system_info() -> dict:
                 name: {"id": s.id} for name, s in _config.sensors.items()
             }
 
-    # Database stats
+    # Database stats — tunge full-scan-spørringer kjøres i threadpool
     if _store:
+        sensor_readings = await run_in_threadpool(_store.get_sensor_log, limit=999999)
+        weather_readings = await run_in_threadpool(_store.get_weather_log, limit=999999)
+        events = await run_in_threadpool(_store.get_events, limit=999999)
         info["database"] = {
-            "sensor_readings": len(_store.get_sensor_log(limit=999999)),
-            "weather_readings": len(_store.get_weather_log(limit=999999)),
-            "events": len(_store.get_events(limit=999999)),
+            "sensor_readings": len(sensor_readings),
+            "weather_readings": len(weather_readings),
+            "events": len(events),
         }
 
     return info
@@ -447,9 +451,11 @@ async def history(hours: int = 24, limit: int = 0) -> dict:
     if _controller:
         heating_on = await _controller.is_on()
 
+    sensors = await run_in_threadpool(_store.get_sensor_history, hours=hours, limit=limit)
+    heating_periods = await run_in_threadpool(_store.get_heating_periods, hours=hours)
     return {
-        "sensors": _store.get_sensor_history(hours=hours, limit=limit),
-        "heating_periods": _store.get_heating_periods(hours=hours),
+        "sensors": sensors,
+        "heating_periods": heating_periods,
         "heating_on": heating_on,
     }
 

@@ -276,3 +276,4 @@ Verifiser internett-tilkobling via `ping 1.1.1.1`. apt-install krever fungerende
 - 2026-04-27: Hardware-valg gjort, build-plan klar
 - 2026-05-15: Rock 3C ankommet, klar for hardware-test. README oppdatert med dd-flyt for Ubuntu 24.04+.
 - 2026-05-20: README utvidet med kompatibilitetsmatrise, bred driver-bundle, web-UI som primær mobilflyt, VID/PID-routing, domene-strategi. Implementasjon (first-boot.sh, add-printer.sh, web-UI-port) pending.
+- 2026-06-11: CI-testing implementert (`.github/workflows/print-server-ci.yml`) — tester shell-scripts med bats/shellcheck og Python-kode med pytest.

@@ -188,6 +188,7 @@ Alle kan kjøre side-om-side på samme Rock 3C så lenge volum og prioritet hån
 
 - 2026-05-15: Oppdatert til Quartz64B-image (DietPi mangler ROCK3C). Dokumentert dd-workflow (Etcher virker ikke på Ubuntu 24.04+). Verifisert på ekte hardware.
 - 2026-05-14: SD-bundle implementert (`flash.sh` + DietPi-automasjon).
+- 2026-06-11: CI-linting implementert (`.github/workflows/spotify-spiller-ci.yml`) — shellcheck på flash.sh og setup-scripts.
 
 <details>
 <summary>Alternativ: manuelt oppsett (uten flash.sh)</summary>

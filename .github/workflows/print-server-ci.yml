@@ -46,6 +46,6 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install dependencies
-        run: pip install flask pytest
+        run: pip install flask pytest -r web/requirements.txt
       - name: Run pytest
         run: pytest tests/ -v

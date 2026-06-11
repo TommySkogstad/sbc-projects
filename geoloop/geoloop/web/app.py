@@ -10,7 +10,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Query, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -461,7 +461,7 @@ async def history(hours: int = 24, limit: int = 0) -> dict:
 
 
 @app.get("/api/log")
-async def log(limit: int = 50) -> dict:
+async def log(limit: int = Query(default=50, ge=1, le=500)) -> dict:
     if not _store:
         return {"error": "Database ikke konfigurert"}
 

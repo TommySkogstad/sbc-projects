@@ -38,6 +38,10 @@ app = FastAPI(title="print-server")
 HOSTNAME = socket.gethostname()
 
 
+def _iso_utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
 def run(cmd: list[str], **kw: Any) -> subprocess.CompletedProcess[str]:
     return subprocess.run(cmd, capture_output=True, text=True, **kw)
 
@@ -375,7 +379,7 @@ async def print_pdf(
             raise HTTPException(500, f"Print feilet: {err}")
 
         job_id = result.stdout.strip()
-        at = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+        at = _iso_utc_now()
         log.info(
             "PRINT ip=%s file=%s size=%.1fMB pages=%d copies=%d sides=%s job=%s",
             client_ip, safe_name, size_mb, pages, copies, sides, job_id,

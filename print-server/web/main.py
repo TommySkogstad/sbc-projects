@@ -1,22 +1,25 @@
 """Print-server web-UI: last opp PDF, print via CUPS.
 
 Portet fra tommytv-infra/printer-service for native systemd-deploy på Rock 3C.
-LAN-only by default — auth utsatt til evt. Cloudflare Tunnel.
+LAN-only by default. Sett PRINT_PASSWORD-env-var for HTTP Basic Auth (anbefalt).
+Auth deaktiveres automatisk hvis env-var ikke er satt (bakoverkompatibel).
 """
 from __future__ import annotations
 
 import logging
 import os
+import secrets
 import socket
 import subprocess
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 MAX_UPLOAD_MB = int(os.environ.get("MAX_UPLOAD_MB", "20"))
@@ -36,6 +39,23 @@ log = logging.getLogger("printer-web")
 app = FastAPI(title="print-server")
 
 HOSTNAME = socket.gethostname()
+
+_http_basic = HTTPBasic(auto_error=False)
+
+
+def _require_auth(creds: Optional[HTTPBasicCredentials] = Depends(_http_basic)) -> None:
+    """Krever HTTP Basic Auth hvis PRINT_PASSWORD env-var er satt."""
+    password = os.environ.get("PRINT_PASSWORD", "")
+    if not password:
+        return
+    if creds is None or not (
+        secrets.compare_digest(creds.password.encode(), password.encode())
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="Ugyldig passord",
+            headers={"WWW-Authenticate": "Basic"},
+        )
 
 
 def _iso_utc_now() -> str:
@@ -320,7 +340,7 @@ def healthz() -> dict[str, Any]:
     }
 
 
-@app.get("/queue")
+@app.get("/queue", dependencies=[Depends(_require_auth)])
 def queue() -> dict[str, Any]:
     printer = default_printer()
     return {
@@ -331,7 +351,7 @@ def queue() -> dict[str, Any]:
     }
 
 
-@app.post("/print")
+@app.post("/print", dependencies=[Depends(_require_auth)])
 async def print_pdf(
     request: Request,
     file: UploadFile = File(...),

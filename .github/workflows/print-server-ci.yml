@@ -1,0 +1,53 @@
+name: Print Server CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "print-server/**"
+      - ".github/workflows/print-server-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "print-server/**"
+      - ".github/workflows/print-server-ci.yml"
+
+defaults:
+  run:
+    working-directory: print-server
+
+jobs:
+  test-shell:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install bats and shellcheck
+        run: sudo apt-get install -y bats shellcheck
+      - name: Seed armbian_first_run.txt
+        run: cp setup/armbian_first_run.txt.example setup/armbian_first_run.txt
+      - name: Run bats tests
+        run: |
+          bats tests/test_add_printer.bats
+          bats tests/test_first_boot.bats
+          bats tests/test_wifi_onboarding.bats
+          bats tests/test_flash.bats
+      - name: shellcheck setup scripts
+        run: |
+          shellcheck --severity=error setup/add-printer.sh
+          shellcheck --severity=error setup/first-boot.sh
+          shellcheck --severity=error setup/wifi-check.sh
+          shellcheck --severity=error flash.sh
+
+  test-python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install flask pytest -r web/requirements.txt
+      - name: Run pytest
+        run: pytest tests/ -v
+        env:
+          LOG_FILE: /tmp/printer-web-test.log

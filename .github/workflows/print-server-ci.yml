@@ -49,3 +49,5 @@ jobs:
         run: pip install flask pytest -r web/requirements.txt
       - name: Run pytest
         run: pytest tests/ -v
+        env:
+          LOG_FILE: /tmp/printer-web-test.log

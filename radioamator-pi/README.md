@@ -1,5 +1,10 @@
 # Radioamatør-pi
 
+> **⚠ Ikke implementert ennå.** Dette er kun en byggeplan. `flash.sh` og
+> `setup/`-mappen (provisjoneringsscript) finnes ikke enda — hardware er
+> heller ikke bestilt. Se «Avklaringer før implementasjon» og «Status» nederst
+> i dokumentet. Sporet i [sbc-projects#28](https://github.com/TommySkogstad/sbc-projects/issues/28).
+
 Companion-Pi til eksisterende radioamatørrigg. Kjører digitalmodes (FT8/FT4/JS8Call), software-TNC (Direwolf for APRS/packet), CAT-kontroll (Hamlib/rigctld), Winlink (Pat) og logging (CQRLOG) parallelt med transceiveren. Henger på USB-en til riggen og frigjør arbeidsmaskinen — kan stå 24/7 som WSPR/FT8-mottaker, APRS i-gate eller Winlink-RMS-relay uten å blokkere shacken.
 
 Primær use-case: koble Pi-en til en moderne HF-rigg via én USB-kabel (CAT + audio i samme), så slipper du å dedikere PC-en. Sekundært: stand-alone APRS-igate på 2 m med en billig håndholdt + USB-lyd.

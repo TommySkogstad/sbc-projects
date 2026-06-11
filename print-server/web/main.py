@@ -10,7 +10,7 @@ import os
 import socket
 import subprocess
 import tempfile
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -375,7 +375,7 @@ async def print_pdf(
             raise HTTPException(500, f"Print feilet: {err}")
 
         job_id = result.stdout.strip()
-        at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+        at = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
         log.info(
             "PRINT ip=%s file=%s size=%.1fMB pages=%d copies=%d sides=%s job=%s",
             client_ip, safe_name, size_mb, pages, copies, sides, job_id,

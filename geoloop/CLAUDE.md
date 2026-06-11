@@ -9,7 +9,7 @@
 ## Kjøring
 - **Produksjon (RPi)**: `sudo systemctl start geoloop` eller `docker compose up -d --build`
 - **Oppsett ny RPi**: `sudo bash scripts/setup-rpi.sh`
-- **Tester**: `pytest tests/ -v` (krever `pip install -e ".[dev]"`)
+- **Tester lokalt**: `python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.lock && .venv/bin/pip install --no-deps -e . && .venv/bin/pytest tests/ -v`
 
 ## Arkitektur
 - `geoloop/main.py` — Oppstart, APScheduler for periodisk værhenting

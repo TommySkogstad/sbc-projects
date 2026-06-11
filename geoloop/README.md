@@ -109,6 +109,8 @@ GeoLoop/
 ├── config.yaml               # Konfigurasjon (git-crypt-kryptert)
 ├── .gitattributes            # git-crypt-regler
 ├── pyproject.toml            # Avhengigheter og prosjektmetadata
+├── requirements.lock         # Pinned production dependencies
+├── requirements-dev.lock     # Pinned dev dependencies (testing, linting)
 ├── geoloop/
 │   ├── main.py               # Oppstart, scheduler, livsløp
 │   ├── config.py             # Konfig-lasting fra YAML
@@ -272,7 +274,8 @@ git-crypt status -e
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install -e ".[dev]"
+.venv/bin/pip install -r requirements-dev.lock
+.venv/bin/pip install --no-deps -e .
 .venv/bin/pytest          # Kjør tester
 .venv/bin/ruff check .    # Lint
 .venv/bin/mypy geoloop/   # Type-check

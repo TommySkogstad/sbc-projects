@@ -1,0 +1,29 @@
+name: Spotify Spiller CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "spotify-spiller/**"
+      - ".github/workflows/spotify-spiller-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "spotify-spiller/**"
+      - ".github/workflows/spotify-spiller-ci.yml"
+
+defaults:
+  run:
+    working-directory: spotify-spiller
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install shellcheck
+        run: sudo apt-get install -y shellcheck
+      - name: shellcheck scripts
+        run: |
+          shellcheck --severity=error flash.sh
+          shellcheck --severity=error setup/Automation_Custom_Script.sh

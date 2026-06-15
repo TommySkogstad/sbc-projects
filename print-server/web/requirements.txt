@@ -1,3 +1,5 @@
 fastapi==0.115.12
 uvicorn[standard]==0.34.3
-python-multipart==0.0.20
+python-multipart==0.0.21
+h11==0.16.0
+starlette==0.46.0

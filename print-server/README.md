@@ -277,4 +277,4 @@ Verifiser internett-tilkobling via `ping 1.1.1.1`. apt-install krever fungerende
 - 2026-05-15: Rock 3C ankommet, klar for hardware-test. README oppdatert med dd-flyt for Ubuntu 24.04+.
 - 2026-05-20: README utvidet med kompatibilitetsmatrise, bred driver-bundle, web-UI som primær mobilflyt, VID/PID-routing, domene-strategi. Implementasjon (first-boot.sh, add-printer.sh, web-UI-port) pending.
 - 2026-06-11: CI-testing implementert (`.github/workflows/print-server-ci.yml`) — tester shell-scripts med bats/shellcheck og Python-kode med pytest.
-- 2026-06-15: Sikkerhet — oppgradert python-multipart til 0.0.21 og pinnet h11==0.16.0, starlette==0.46.0 for å fikse HTTP request smuggling og injection-sårbarhet (issue #46).
+- 2026-06-15: Sikkerhet — oppgradert python-multipart til 0.0.21 og pinnet h11==0.16.0, starlette==0.46.0 for å fikse HTTP request smuggling og injection-sårbarhet (issue #46). Videre oppgradert fastapi==0.121.0 og starlette==0.49.1 for å fikse GHSA-7f5h-v6xp-fcq8 og GHSA-2c2j-9gv5-cj73 (issue #48).

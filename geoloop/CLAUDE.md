@@ -40,6 +40,7 @@
 - `docker-compose.yml` kjører tre tjenester: `geoloop`, `cloudflared`, `watchdog`
 - SQLite-database lagres i Docker volume `geoloop_data` montert på `/app/data`
 - config.yaml monteres read-only på `/app/config.yaml`
+- Watchdog-miljøvariabler: `WATCHDOG_NTFY_URL` (default: `https://ntfy.sh`), `WATCHDOG_NTFY_TOPIC`
 
 ## CI/CD
 - GitHub Actions: `.github/workflows/ci.yml`

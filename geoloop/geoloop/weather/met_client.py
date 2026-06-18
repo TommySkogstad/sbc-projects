@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 
 import httpx
+
+logger = logging.getLogger(__name__)
 
 _FORECAST_URL = (
     "https://api.met.no/weatherapi/locationforecast/2.0/compact"
@@ -74,10 +77,16 @@ class MetClient:
 
         expires_header = resp.headers.get("Expires")
         if expires_header:
-            self._expires = parsedate_to_datetime(expires_header)
+            try:
+                self._expires = parsedate_to_datetime(expires_header)
+            except (TypeError, ValueError):
+                logger.warning("Ugyldig Expires-header fra met.no: %r — cache deaktivert", expires_header)
 
         data = resp.json()
         timeseries = data["properties"]["timeseries"]
+
+        if not timeseries:
+            raise ValueError("Mottok tom tidsserie fra met.no")
 
         snapshots = [_parse_timeseries_entry(e) for e in timeseries]
         forecast = WeatherForecast(

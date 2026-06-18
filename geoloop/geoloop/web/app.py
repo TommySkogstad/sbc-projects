@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.metadata
 import logging
 import os
 import secrets
@@ -28,6 +29,11 @@ logger = logging.getLogger(__name__)
 
 _STATIC_DIR = Path(__file__).parent / "static"
 
+try:
+    _APP_VERSION = importlib.metadata.version("geoloop")
+except importlib.metadata.PackageNotFoundError:
+    _APP_VERSION = "0.1.0"
+
 _PASSWORD = os.environ.get("GEOLOOP_PASSWORD", "")
 _AUTH_TOKEN = hashlib.sha256(_PASSWORD.encode()).hexdigest() if _PASSWORD else ""
 _AUTH_COOKIE = "geoloop_auth"
@@ -39,7 +45,7 @@ _login_attempts: dict[str, list[float]] = defaultdict(list)
 _RATE_LIMIT_MAX = 5
 _RATE_LIMIT_WINDOW = 300  # sekunder
 
-app = FastAPI(title="GeoLoop", version="0.1.0")
+app = FastAPI(title="GeoLoop", version=_APP_VERSION)
 app.mount("/static", StaticFiles(directory=_STATIC_DIR), name="static")
 
 
@@ -221,7 +227,7 @@ _HOST_HOSTNAME = os.environ.get("HOST_HOSTNAME", "")
 async def system_info() -> dict:
     """Systeminformasjon og konfigurasjon."""
     info: dict = {
-        "version": "0.1.0",
+        "version": _APP_VERSION,
         "location": {"lat": _lat, "lon": _lon},
         "network": {
             "hostname": _HOST_HOSTNAME or socket.gethostname(),

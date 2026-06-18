@@ -26,7 +26,6 @@ class RelayController:
         self._k2 = OutputDevice(
             circulation_pump_pin, active_high=active_high, initial_value=False
         )
-        self._on = False
         logger.info(
             "RelayController initialisert: K1=GPIO%d, K2=GPIO%d",
             heat_pump_pin,
@@ -37,19 +36,17 @@ class RelayController:
         """Slå på varmepumpe og sirkulasjonspumpe."""
         self._k1.on()
         self._k2.on()
-        self._on = True
         logger.info("Relé PÅ (K1 + K2)")
 
     async def turn_off(self) -> None:
         """Slå av varmepumpe og sirkulasjonspumpe."""
         self._k1.off()
         self._k2.off()
-        self._on = False
         logger.info("Relé AV (K1 + K2)")
 
     async def is_on(self) -> bool:
-        """Sjekk om varmesystemet er på."""
-        return self._on
+        """Sjekk om varmesystemet er på — leser faktisk GPIO-tilstand."""
+        return bool(self._k1.is_active)
 
     def close(self) -> None:
         """Frigjør GPIO-ressurser."""

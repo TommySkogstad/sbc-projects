@@ -19,6 +19,9 @@ def make_controller(mock_gpiozero):
     """Opprett RelayController med mockede OutputDevices."""
     mock_k1 = MagicMock()
     mock_k2 = MagicMock()
+    mock_k1.is_active = False
+    mock_k1.on.side_effect = lambda: setattr(mock_k1, "is_active", True)
+    mock_k1.off.side_effect = lambda: setattr(mock_k1, "is_active", False)
     mock_gpiozero.OutputDevice.side_effect = [mock_k1, mock_k2]
 
     from geoloop.controller.relay import RelayController
@@ -66,6 +69,18 @@ class TestRelayController:
         ctrl.close()
         mock_k1.close.assert_called_once()
         mock_k2.close.assert_called_once()
+
+    async def test_should_read_gpio_state_for_is_on(self, mock_gpiozero):
+        """is_on() skal lese faktisk GPIO-tilstand, ikke intern flagg."""
+        mock_k1 = MagicMock()
+        mock_k2 = MagicMock()
+        mock_k1.is_active = True  # Simuler at GPIO var HIGH (f.eks. satt av annen prosess)
+        mock_gpiozero.OutputDevice.side_effect = [mock_k1, mock_k2]
+
+        from geoloop.controller.relay import RelayController
+
+        ctrl = RelayController(heat_pump_pin=26, circulation_pump_pin=20)
+        assert await ctrl.is_on() is True
 
     def test_should_pass_active_high_false(self, mock_gpiozero):
         mock_k1 = MagicMock()

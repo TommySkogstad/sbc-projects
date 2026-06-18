@@ -64,7 +64,7 @@ services:
                 -H "Title: Hovedserver nede" \
                 -H "Priority: urgent" \
                 -H "Tags: rotating_light" \
-                https://ntfy.sh/$${WATCHDOG_NTFY_TOPIC:-tommytv-uptime}
+                ${WATCHDOG_NTFY_URL:-https://ntfy.sh}/$${WATCHDOG_NTFY_TOPIC:-tommytv-uptime}
               FAILS=0
               sleep 300
               continue

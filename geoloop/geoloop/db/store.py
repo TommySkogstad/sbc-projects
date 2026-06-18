@@ -198,6 +198,15 @@ class Store:
         ).fetchall()
         return [dict(row) for row in rows]
 
+    def count_sensor_log(self) -> int:
+        return self._conn.execute("SELECT COUNT(*) FROM sensor_log").fetchone()[0]
+
+    def count_weather_log(self) -> int:
+        return self._conn.execute("SELECT COUNT(*) FROM weather_log").fetchone()[0]
+
+    def count_events(self) -> int:
+        return self._conn.execute("SELECT COUNT(*) FROM system_events").fetchone()[0]
+
     def get_sensor_history(self, hours: int = 24, limit: int = 0) -> list[dict]:
         """Hent sensordata pivotert per tidsstempel for de siste N timer.
 

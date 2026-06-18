@@ -56,6 +56,20 @@ class TestStore:
         rows = self.store.get_weather_log()
         assert rows[0]["temperature"] == 2.0
 
+    def test_should_count_sensor_log_without_fetching_rows(self):
+        self.store.log_sensor("s1", 1.0)
+        self.store.log_sensor("s1", 2.0)
+        assert self.store.count_sensor_log() == 2
+
+    def test_should_count_weather_log(self):
+        self.store.log_weather(temperature=5.0)
+        self.store.log_weather(temperature=6.0)
+        assert self.store.count_weather_log() == 2
+
+    def test_should_count_events(self):
+        self.store.log_event("startup", "ok")
+        assert self.store.count_events() == 1
+
 
 class TestCompaction:
     def setup_method(self):

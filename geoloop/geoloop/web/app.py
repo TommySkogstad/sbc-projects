@@ -260,15 +260,11 @@ async def system_info() -> dict:
                 name: {"id": s.id} for name, s in _config.sensors.items()
             }
 
-    # Database stats — tunge full-scan-spørringer kjøres i threadpool
     if _store:
-        sensor_readings = await run_in_threadpool(_store.get_sensor_log, limit=999999)
-        weather_readings = await run_in_threadpool(_store.get_weather_log, limit=999999)
-        events = await run_in_threadpool(_store.get_events, limit=999999)
         info["database"] = {
-            "sensor_readings": len(sensor_readings),
-            "weather_readings": len(weather_readings),
-            "events": len(events),
+            "sensor_readings": await run_in_threadpool(_store.count_sensor_log),
+            "weather_readings": await run_in_threadpool(_store.count_weather_log),
+            "events": await run_in_threadpool(_store.count_events),
         }
 
     return info

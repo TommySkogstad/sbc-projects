@@ -112,3 +112,38 @@ class TestMetClient:
         await client.fetch_forecast(59.91, 10.75)
 
         assert call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_should_not_crash_on_invalid_expires_header(self, monkeypatch):
+        """Ugyldig Expires-format skal ikke kaste unntak — cachen hoppes over."""
+        async def mock_get(self, url, **kwargs):
+            return httpx.Response(
+                200,
+                json=SAMPLE_RESPONSE,
+                headers={"Expires": "ugyldig-dato-format"},
+                request=httpx.Request("GET", url),
+            )
+
+        monkeypatch.setattr(httpx.AsyncClient, "get", mock_get)
+        client = MetClient(user_agent="test/1.0")
+        forecast = await client.fetch_forecast(59.91, 10.75)
+        assert forecast.current.air_temperature == -2.5
+        assert client._expires is None
+
+    @pytest.mark.asyncio
+    async def test_should_raise_value_error_on_empty_timeseries(self, monkeypatch):
+        """Tom tidsserie fra met.no skal gi ValueError, ikke IndexError."""
+        empty_response = {"properties": {"timeseries": []}}
+
+        async def mock_get(self, url, **kwargs):
+            return httpx.Response(
+                200,
+                json=empty_response,
+                headers={},
+                request=httpx.Request("GET", url),
+            )
+
+        monkeypatch.setattr(httpx.AsyncClient, "get", mock_get)
+        client = MetClient(user_agent="test/1.0")
+        with pytest.raises(ValueError, match="tom"):
+            await client.fetch_forecast(59.91, 10.75)

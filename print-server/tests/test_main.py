@@ -9,12 +9,44 @@ import pytest
 
 MAIN_PY = Path(__file__).resolve().parent.parent / "web" / "main.py"
 WEB_DIR = MAIN_PY.parent
+REQUIREMENTS_TXT = WEB_DIR / "requirements.txt"
 
 
 def test_no_utcnow_in_main():
     """main.py skal ikke bruke deprecated datetime.utcnow()."""
     source = MAIN_PY.read_text()
     assert "utcnow" not in source, "Fant deprecated datetime.utcnow() i main.py"
+
+
+def _pinned_version(requirements_text: str, package: str) -> tuple[int, ...]:
+    """Hent den `==`-pinnede versjonen for en pakke fra requirements.txt som int-tuple."""
+    for line in requirements_text.splitlines():
+        m = re.match(
+            rf"^{re.escape(package)}(?:\[[^\]]*\])?==([0-9]+(?:\.[0-9]+)*)",
+            line.strip(),
+        )
+        if m:
+            return tuple(int(part) for part in m.group(1).split("."))
+    raise AssertionError(f"Fant ingen '=='-pin for {package} i requirements.txt")
+
+
+def test_requirements_pin_safe_dependency_versions():
+    """requirements.txt skal pinne python-multipart og starlette til versjoner
+    uten kjente HIGH-sårbarheter (OSV/GHSA, issue #63).
+
+    Terskler avledet fra pip-audit sine fix-versjoner:
+    - python-multipart >= 0.0.31 (CVE-2026-53538/53539/53540 m.fl.)
+    - starlette        >= 1.3.1  (PYSEC-2026-249, GHSA-82w8-qh3p-5jfq m.fl.)
+    """
+    text = REQUIREMENTS_TXT.read_text()
+    assert _pinned_version(text, "python-multipart") >= (0, 0, 31), (
+        "python-multipart er pinnet til en versjon med kjente sårbarheter "
+        "(krever >= 0.0.31, se issue #63)"
+    )
+    assert _pinned_version(text, "starlette") >= (1, 3, 1), (
+        "starlette er pinnet til en versjon med kjente sårbarheter "
+        "(krever >= 1.3.1, se issue #63)"
+    )
 
 
 def test_timestamp_is_iso8601_utc_with_z_suffix():

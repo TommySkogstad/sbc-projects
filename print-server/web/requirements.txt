@@ -1,5 +1,7 @@
 fastapi==0.121.0
 uvicorn[standard]==0.34.3
-python-multipart==0.0.21
+python-multipart==0.0.32
 h11==0.16.0
 starlette==0.49.1
+# idna eksplisitt pinnet (transitiv via anyio/httpx) for å tvinge CVE-2026-45409-fiks
+idna==3.18

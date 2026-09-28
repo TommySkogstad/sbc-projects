@@ -1,19 +1,20 @@
 #!/bin/bash
 # Valideringsskript for cloudflared-versjonsbump
 # Verifiserer at docker-compose.yml er syntaksriktig og at image-tagen finnes
+#
+# Skriptet skriver aldri til geoloop/.env (sporet og git-crypt-kryptert).
+# Validering skjer mot en midlertidig prosjektmappe med dummy-.env.
 
-set -e
+set -euo pipefail
 
-cd "$(dirname "$0")/../geoloop"
+GEOLOOP_DIR="$(cd "$(dirname "$0")/../geoloop" && pwd)"
+COMPOSE_FILE="$GEOLOOP_DIR/docker-compose.yml"
+
+TMP_DIR=$(mktemp -d)
+trap 'rm -rf "$TMP_DIR"' EXIT
 
 echo "🔍 Validerer docker-compose.yml syntaks..."
-# Lag dummy .env for validering
-SAVED_ENV=""
-if [ -f .env ]; then
-  SAVED_ENV=$(cat .env)
-fi
-
-cat > .env <<'EOF'
+cat > "$TMP_DIR/.env" <<'EOF'
 CLOUDFLARE_TUNNEL_TOKEN=dummy_token_for_validation
 HOST_IP=127.0.0.1
 HOST_HOSTNAME=geoloop-test
@@ -21,23 +22,15 @@ WATCHDOG_NTFY_URL=https://ntfy.sh
 WATCHDOG_NTFY_TOPIC=test
 EOF
 
-if docker compose config > /dev/null 2>&1; then
+if docker compose --project-directory "$TMP_DIR" -f "$COMPOSE_FILE" config -q; then
   echo "✅ Syntaks OK"
 else
   echo "❌ YAML-syntaks feil i docker-compose.yml"
   exit 1
 fi
 
-# Gjenopprett original .env
-if [ -n "$SAVED_ENV" ]; then
-  echo "$SAVED_ENV" > .env
-else
-  rm .env
-  git checkout .env 2>/dev/null || true
-fi
-
 echo "🔍 Sjekker at cloudflared-image finnes på registry..."
-CLOUDFLARED_TAG=$(grep -oP 'cloudflare/cloudflared:\K[^ ]+' docker-compose.yml)
+CLOUDFLARED_TAG=$(grep -oP 'cloudflare/cloudflared:\K[^ ]+' "$COMPOSE_FILE")
 echo "   Tag: $CLOUDFLARED_TAG"
 
 if docker manifest inspect "cloudflare/cloudflared:$CLOUDFLARED_TAG" > /dev/null 2>&1; then

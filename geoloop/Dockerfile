@@ -1,4 +1,4 @@
-FROM python:3.11.13-slim@sha256:9bffe4353b925a1656688797ebc68f9c525e79b1d377a764d232182a519eeec4
+FROM python:3.11.16-slim@sha256:e41613d42d4891e4930f79523f93f81bbc7632584ec65e36ab055f41a800b41e
 
 RUN groupadd -r geoloop && useradd -r -g geoloop -d /app geoloop
 

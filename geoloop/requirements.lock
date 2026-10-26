@@ -4,13 +4,13 @@ annotated-doc==0.0.4
     # via fastapi
 annotated-types==0.7.0
     # via pydantic
-anyio==4.13.0
+anyio==4.14.2
     # via
     #   httpx
     #   starlette
 apscheduler==3.11.2
     # via geoloop (pyproject.toml)
-certifi==2026.5.20
+certifi==2026.10.23
     # via
     #   httpcore
     #   httpx
@@ -36,7 +36,7 @@ pydantic-core==2.46.4
     # via pydantic
 pyyaml==6.0.3
     # via geoloop (pyproject.toml)
-starlette==1.3.0
+starlette==1.3.1
     # via fastapi
 typing-extensions==4.15.0
     # via

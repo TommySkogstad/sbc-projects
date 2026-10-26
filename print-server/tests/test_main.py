@@ -31,12 +31,18 @@ def _pinned_version(requirements_text: str, package: str) -> tuple[int, ...]:
 
 
 def test_requirements_pin_safe_dependency_versions():
-    """requirements.txt skal pinne python-multipart og starlette til versjoner
-    uten kjente HIGH-sårbarheter (OSV/GHSA, issue #63).
+    """requirements.txt skal pinne python-multipart, starlette, anyio og idna til
+    versjoner uten kjente sårbarheter (OSV/GHSA, issue #63 og #85).
 
     Terskler avledet fra pip-audit sine fix-versjoner:
     - python-multipart >= 0.0.31 (CVE-2026-53538/53539/53540 m.fl.)
     - starlette        >= 1.3.1  (PYSEC-2026-249, GHSA-82w8-qh3p-5jfq m.fl.)
+    - anyio            >= 4.14.2 (GHSA-82r6-8w77-94w6, GHSA-5p39-cfhj-2xmp)
+    - idna             >= 3.18   (GHSA-65pc-fj4g-8rjx er fikset i 3.15, men
+                                  lock-filen hadde 3.18 før #85)
+
+    anyio og idna kommer transitivt via starlette. Uten egen pin løser
+    OSV-Scanner dem til gamle, sårbare versjoner (issue #85).
     """
     text = REQUIREMENTS_TXT.read_text()
     assert _pinned_version(text, "python-multipart") >= (0, 0, 31), (
@@ -46,6 +52,14 @@ def test_requirements_pin_safe_dependency_versions():
     assert _pinned_version(text, "starlette") >= (1, 3, 1), (
         "starlette er pinnet til en versjon med kjente sårbarheter "
         "(krever >= 1.3.1, se issue #63)"
+    )
+    assert _pinned_version(text, "anyio") >= (4, 14, 2), (
+        "anyio er pinnet til en versjon med kjente sårbarheter "
+        "(krever >= 4.14.2, se issue #85)"
+    )
+    assert _pinned_version(text, "idna") >= (3, 18), (
+        "idna er pinnet til en versjon med kjente sårbarheter "
+        "(krever >= 3.18, se issue #85)"
     )
 
 

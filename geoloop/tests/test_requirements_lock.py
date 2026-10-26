@@ -20,6 +20,11 @@ MIN_SAFE_VERSIONS = {
     "certifi": (2026, 10, 19),  # GHSA-6q48-6c7w-9gw2
 }
 
+# Kun dev-lock: pytest finnes ikke i requirements.lock (prod).
+MIN_SAFE_DEV_VERSIONS = {
+    "pytest": (9, 0, 3),  # GHSA-6w46-j5rx-g56g / CVE-2025-71176 (issue #89)
+}
+
 
 def _locked_version(lock_text: str, package: str) -> tuple[int, ...]:
     """Hent den `==`-låste versjonen for en pakke fra en lock-fil som int-tuple."""
@@ -44,4 +49,16 @@ def test_lock_pins_safe_dependency_versions(lock_file: Path, package: str) -> No
     assert locked >= minimum, (
         f"{lock_file.name} låser {package} til {'.'.join(map(str, locked))}, som har "
         f"kjente sårbarheter (krever >= {'.'.join(map(str, minimum))}, se issue #87)"
+    )
+
+
+@pytest.mark.parametrize("package", sorted(MIN_SAFE_DEV_VERSIONS))
+def test_dev_lock_pins_safe_dev_dependency_versions(package: str) -> None:
+    """requirements-dev.lock skal låse dev-verktøy til versjoner uten kjente sårbarheter (issue #89)."""
+    minimum = MIN_SAFE_DEV_VERSIONS[package]
+    lock_file = PROJECT_DIR / "requirements-dev.lock"
+    locked = _locked_version(lock_file.read_text(), package)
+    assert locked >= minimum, (
+        f"{lock_file.name} låser {package} til {'.'.join(map(str, locked))}, som har "
+        f"kjente sårbarheter (krever >= {'.'.join(map(str, minimum))}, se issue #89)"
     )
